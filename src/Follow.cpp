@@ -40,13 +40,21 @@ double calcAngle(cv::Mat map, cv::Point_<int> point, double min_distance) {
 
 double calcStraight(double min_distance) {
 
+<<<<<<< HEAD
 	if (min_distance == -1) return -0.3;
+=======
+	if (min_distance == -1) return -0.1;
+>>>>>>> a78fd19326c27a6f91911146790d7cb0a2d4e4ff
 
 	if (min_distance == 0) return 0;
 
 	if (min_distance > 0.5) return (min_distance) * 0.3;
 
+<<<<<<< HEAD
 	return -0.3;
+=======
+	return -0.1;
+>>>>>>> a78fd19326c27a6f91911146790d7cb0a2d4e4ff
 }
 
 /*void minDistancePoint(const sensor_msgs::Image::ConstPtr& cv_image , int point[]) {

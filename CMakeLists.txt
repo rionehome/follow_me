@@ -209,5 +209,8 @@ add_executable(Follow src/Follow.cpp)
 target_link_libraries(Follow ${OpenCV_LIBS} ${catkin_LIBRARIES})
 add_executable(Follow_URG src/Follow_URG.cpp)
 target_link_libraries(Follow_URG  ${OpenCV_LIBS} ${catkin_LIBRARIES})
+<<<<<<< HEAD
 add_executable(Follow_NiTE2 src/Follow_NiTE2.cpp)
 target_link_libraries(Follow_NiTE2 ${OpenCV_LIBS}  ${catkin_LIBRARIES})
+=======
+>>>>>>> a78fd19326c27a6f91911146790d7cb0a2d4e4ff
