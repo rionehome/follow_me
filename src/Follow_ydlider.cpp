@@ -8,36 +8,61 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <math.h>
 #include <iostream>
+#include <cmath>
+
 
 using namespace std;
 
-//URG maxサイズ:1080
-//URG minサイズ:44
+vector<cv::Point> stack_point;
+cv::Point base_point;
+
 
 ros::Publisher pub;
 std_msgs::Float64MultiArray info;
 
-void minDistance(const sensor_msgs::LaserScan::ConstPtr& msgs, double data[]) {
+void minDistance_Position(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point result) {
 
 	double min = INT_MAX;
 	double min_index = 0;
+	double rad = msgs->angle_min;
 
-	for (int i = 44; i < (int)msgs->ranges.size(); ++i) {
-
-		if (msgs->range_min + 0.5 < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
-
+	for (int i = 0; i < (int)msgs->ranges.size(); ++i) {
+		if (msgs->range_min + 0.05 < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
 			if (min > msgs->ranges[i]) {
 				min = msgs->ranges[i];
 				min_index = i;
 			}
-
 		}
-
+		rad += msgs->angle_increment;
 	}
+	result.x = 250 + msgs->ranges[min_index] * sin(rad) * 100;
+	result.y = 250 + msgs->ranges[min_index] * cos(rad) * 100;
+	//stack_point.push_back(cv::Point2f(250 + msgs->ranges[min_index] * sin(rad) * 100, 250 + msgs->ranges[min_index] * cos(rad) * 100));
+	//data[0] = min;
+	//data[1] = min_index;
 
-	data[0] = min;
-	data[1] = min_index;
+}
 
+void closePosition(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point base) {
+	double rad = msgs->angle_min;
+	cv::Point position, min(0, 0);
+	double min_distance = msgs->range_max;
+	double distance;
+	for (int i = 0; i < (int)msgs->ranges.size(); ++i) {
+		if (msgs->range_min + 0.05  < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
+			position.x = 250 + msgs->ranges[i] * sin(rad) * 100;
+			position.y = 250 + msgs->ranges[i] * cos(rad) * 100;
+			distance = hypot(position.x - base.x, position.y - base.y);
+			if (min_distance > distance) {
+				min_distance = distance;
+				min.x = position.x;
+				min.y = position.y;
+			}
+		}
+		rad += msgs->angle_increment;
+	}
+	base.x = min.x;
+	base.y = min.y;
 }
 
 double calcAngle(const sensor_msgs::LaserScan::ConstPtr& cv_image, int min_index) {
@@ -47,25 +72,28 @@ double calcAngle(const sensor_msgs::LaserScan::ConstPtr& cv_image, int min_index
 	double result;
 
 	result = (5 * (min_index - centerindex)) / 518.0;
-	printf("%f\n", result );
 	return result;
 }
 
 double calcStraight(const sensor_msgs::LaserScan::ConstPtr& cv_image, int mindistance) {
-
 	return mindistance > 0 ? 0.2 : 0;
-
 }
 
 void depth(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 
-	cv::Mat img = cv::Mat::zeros(500, 500, CV_8UC3);
+	cv::Mat img = cv::Mat::zeros(600, 600, CV_8UC3);
 
 	double rad = msgs->angle_min;
 	double data[2] = {0, 0};
 
+	cout << base_point << '\n';
 
-	minDistance(msgs, data);
+	if (stack_point.empty()) {
+		//最初のポイントを決定
+		minDistance_Position(msgs, stack_point[0]);
+	} else {
+		closePosition(msgs, stack_point[0]);
+	}
 
 	info.data.clear();
 
@@ -75,9 +103,9 @@ void depth(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 
 	pub.publish(info);
 
-	for (int i = 44; i < (int)msgs->ranges.size(); ++i) {
+	for (int i = 0; i < (int)msgs->ranges.size(); ++i) {
 
-		if (msgs->range_min + 0.7 < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
+		if (msgs->range_min + 0.05  < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
 
 			cv::Point position(250 + msgs->ranges[i] * sin(rad) * 100, 250 + msgs->ranges[i] * cos(rad) * 100);
 			//cv::Point position(50, 50);
@@ -102,7 +130,9 @@ void depth(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "followme_urg");
+	ros::init(argc, argv, "followme_ydlider");
+
+	cout << stack_point.empty() << '\n';
 
 	ros::NodeHandle n;
 
