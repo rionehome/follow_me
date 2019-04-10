@@ -87,14 +87,13 @@ void depth(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 	double data[2] = {0, 0};
 
 	cout << base_point << '\n';
-
-	if (stack_point.empty()) {
-		//最初のポイントを決定
-		minDistance_Position(msgs, stack_point[0]);
-	} else {
-		closePosition(msgs, stack_point[0]);
-	}
-
+	/*
+		if (stack_point.empty()) {
+			//最初のポイントを決定
+			minDistance_Position(msgs, stack_point[0]);
+		} else {
+			closePosition(msgs, stack_point[0]);
+		}*/
 	info.data.clear();
 
 	info.data.push_back(calcStraight(msgs, data[0]));
@@ -109,11 +108,19 @@ void depth(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 
 			cv::Point position(250 + msgs->ranges[i] * sin(rad) * 100, 250 + msgs->ranges[i] * cos(rad) * 100);
 			//cv::Point position(50, 50);
-			cv::Scalar color(0, 255, 0);
+			cv::Scalar color;
+			if (i == 0) {
+				color = cv::Scalar(0, 255, 0);
+
+				printf("red\n");
+			} else {
+				color = cv::Scalar(0, 0, 255);
+
+			}
 
 			//cv::drawMarker(img, position, color);
 
-			cv::circle(img, position, 1, color, -1);
+			cv::circle(img, position, 1, color, 1);
 
 			//printf("[ %f, %f ]\n", msgs->ranges[i] * sin(rad) * 100, msgs->ranges[i] * cos(rad) * 100);
 		}
@@ -131,8 +138,6 @@ void depth(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "followme_ydlider");
-
-	cout << stack_point.empty() << '\n';
 
 	ros::NodeHandle n;
 

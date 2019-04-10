@@ -1,265 +1,155 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "sensor_msgs/Image.h"
+#include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/highgui.hpp>
-#include "sensor_msgs/PointCloud2.h"
 #include <std_msgs/Float64MultiArray.h>
+#include <math.h>
+#include <iostream>
+#include <cmath>
+#include "FollowMeLib.hpp"
 
-cv::Mat rgbimg;
-ros::Publisher pub;
-std_msgs::Float64MultiArray info;
 
-bool flag = true;
+using namespace std;
 
-/*double calcAngle(const sensor_msgs::Image::ConstPtr& cv_image, int minpoint[]) {
+class Follow {
+public:
+	Follow();
+	~Follow();
+	ros::Publisher pub;
+	std_msgs::Float64MultiArray info;
 
-	int centerpoint = cv_image->width / 2;
+	std::vector<FollowMeLib> v;
+
+	ros::NodeHandle n;
+
+	void minDistance_Position(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point result);
+	void closePosition(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point base);
+	double calcAngle(const sensor_msgs::LaserScan::ConstPtr& cv_image, int min_index);
+	double calcStraight(const sensor_msgs::LaserScan::ConstPtr& cv_image, int mindistance);
+	void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs);
+};
+
+Follow::Follow() {
+	ros::Subscriber ydlider = n.subscribe("/scan", 1000, &Follow::ydlider_callback, this);
+	pub = n.advertise<std_msgs::Float64MultiArray>("/move/amount", 1000);
+}
+
+Follow::~Follow() {
+	printf("Shutdown class of 'Follow'\n");
+}
+
+void Follow::minDistance_Position(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point result) {
+
+	double min = INT_MAX;
+	double min_index = 0;
+	double rad = msgs->angle_min;
+
+	for (int i = 0; i < (int)msgs->ranges.size(); ++i) {
+		if (msgs->range_min + 0.05 < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
+			if (min > msgs->ranges[i]) {
+				min = msgs->ranges[i];
+				min_index = i;
+			}
+		}
+		rad += msgs->angle_increment;
+	}
+	result.x = 250 + msgs->ranges[min_index] * sin(rad) * 100;
+	result.y = 250 + msgs->ranges[min_index] * cos(rad) * 100;
+	//stack_point.push_back(cv::Point2f(250 + msgs->ranges[min_index] * sin(rad) * 100, 250 + msgs->ranges[min_index] * cos(rad) * 100));
+	//data[0] = min;
+	//data[1] = min_index;
+
+}
+
+void Follow::closePosition(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point base) {
+	double rad = msgs->angle_min;
+	cv::Point position, min(0, 0);
+	double min_distance = msgs->range_max;
+	double distance;
+	for (int i = 0; i < (int)msgs->ranges.size(); ++i) {
+		if (msgs->range_min + 0.05  < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
+			position.x = 250 + msgs->ranges[i] * sin(rad) * 100;
+			position.y = 250 + msgs->ranges[i] * cos(rad) * 100;
+			distance = hypot(position.x - base.x, position.y - base.y);
+			if (min_distance > distance) {
+				min_distance = distance;
+				min.x = position.x;
+				min.y = position.y;
+			}
+		}
+		rad += msgs->angle_increment;
+	}
+	base.x = min.x;
+	base.y = min.y;
+}
+
+double Follow::calcAngle(const sensor_msgs::LaserScan::ConstPtr& cv_image, int min_index) {
+
+	int centerindex = 562;
 
 	double result;
 
-	result = (2 * (centerpoint - minpoint[1])) / (double)centerpoint;
-
-	return result;
-}*/
-
-
-double calcAngle(cv::Mat map, cv::Point_<int> point, double min_distance) {
-
-	int centerpoint = map.size[1] / 2;
-
-	double result;
-
-	result = (2 * (centerpoint - point.x)) / (double)centerpoint;
-
-	if (min_distance == -1) result = 0;
-
+	result = (5 * (min_index - centerindex)) / 518.0;
 	return result;
 }
 
-double calcStraight(double min_distance) {
-
-	if (min_distance == -1) return -0.1;
-
-	if (min_distance == 0) return 0;
-
-	if (min_distance > 0.5) return (min_distance) * 0.3;
-
-	return -0.1;
+double Follow::calcStraight(const sensor_msgs::LaserScan::ConstPtr& cv_image, int mindistance) {
+	return mindistance > 0 ? 0.2 : 0;
 }
 
-/*void minDistancePoint(const sensor_msgs::Image::ConstPtr& cv_image , int point[]) {
+void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 
-	int height = cv_image->height;
-	int width = cv_image->width;
-	int min = INT_MAX;
-	int count = 0;
-	int sum = 0;
+	cv::Mat img = cv::Mat::zeros(600, 600, CV_8UC3);
 
-	for (int i = (height / 3) * width + 1; i < (height / 3) * width + width; ++i) {
-
-		if (min > cv_image->data[i] && cv_image->data[i] > 0) min = cv_image->data[i];
-
-	}
-
-	for (int i = (height / 3) * width + 1; i < (height / 3) * width + width; ++i) {
-
-		if (min == cv_image->data[i]) {
-			count++;
-			sum += i;
-
-			cv::Point position(i - ((height / 3) * width), height / 3);
-
-			cv::Scalar color(0, 255, 0);
-
-			cv::drawMarker(rgbimg, position, color);
-		}
-
-	}
-
-	if (count == 0) return;
-
-	point[0] = height / 3;
-	point[1] = (sum / count) - ((height / 3) * width);
-	point[2] = min;
-	//printf("%d , %d\n", point[0], point[1] );
-	//printf("%d\n", min );
-
-}*/
-
-cv::Point_<int> minDistancePoint(cv::Mat map, double *min) {
-
-	double min_distance = std::numeric_limits<double>::max();
-	double sample;
-	cv::Point_<int> result;
-
-	int y = map.size[0] / 2;
-	int count = 0;
-
-	for (int x = 0; x < map.size[1]; ++x) {
-
-		sample = map.at<double>(y, x);
-
-		if (sample > 0 && min_distance > sample) {
-			min_distance = sample;
-			result.x = x;
-			result.y = y;
-		}
-
-		if (std::isnan(sample)) count++;
-
-	}
-
-	printf("%d\n", count );
-
-	*min = (map.size[1] / 2 > count ? min_distance : -1);
-
-	return result;
-}
-
-cv::Mat calcDepth(const sensor_msgs::PointCloud2::ConstPtr& msg) {
-
-	int height = msg->height;
-	int width = msg->width;
-
-	cv::Mat result(height, width, CV_MAKETYPE(CV_64F, 1));
-
-	for (int v = 0; v < height; ++v) {
-		for (int u = 0; u < width; ++u) {
-
-			// Convert from u (column / width), v (row/height) to position in array
-			// where X,Y,Z data starts
-			int arrayPosition = v * msg->row_step + u * msg->point_step;
-
-			// compute position in array where x,y,z data start
-			int arrayPosX = arrayPosition + msg->fields[0].offset; // X has an offset of 0
-			int arrayPosY = arrayPosition + msg->fields[1].offset; // Y has an offset of 4
-			int arrayPosZ = arrayPosition + msg->fields[2].offset; // Z has an offset of 8
-
-			float X = 0.0;
-			float Y = 0.0;
-			float Z = 0.0;
-
-			memcpy(&X, &msg->data[arrayPosX], sizeof(float));
-			memcpy(&Y, &msg->data[arrayPosY], sizeof(float));
-			memcpy(&Z, &msg->data[arrayPosZ], sizeof(float));
-
-			result.at<double>(v, u) = sqrt(pow(X, 2) + pow(Y, 2) + pow(Z, 2));
-
-		}
-	}
-
-	return result;
-
-}
-
-void depth_points(const sensor_msgs::PointCloud2::ConstPtr& msg ) {
-
-	cv::Mat depth_image = calcDepth(msg);
-
-	cv::Point_<int> position;
-	double min_distance;
-
-	position = minDistancePoint(depth_image, &min_distance);
-
-	cv::Scalar color(0, 0, 255);
-
-	cv::drawMarker(rgbimg, position, color);
-
+	double rad = msgs->angle_min;
+	double data[2] = {0, 0};
+	/*
+		if (stack_point.empty()) {
+			//最初のポイントを決定
+			minDistance_Position(msgs, stack_point[0]);
+		} else {
+			closePosition(msgs, stack_point[0]);
+		}*/
 	info.data.clear();
 
-	if (flag) {
-		info.data.push_back(calcStraight(min_distance));
-	} else {
-		info.data.push_back(0);
-	}
-
-	info.data.push_back(0.03);
-
-	if (flag) {
-		info.data.push_back(calcAngle(depth_image, position, min_distance));
-	} else {
-		info.data.push_back(0);
-	}
-
-	info.data.push_back(0.3);
+	info.data.push_back(calcStraight(msgs, data[0]));
+	//info.data.push_back(0);
+	info.data.push_back(calcAngle(msgs, data[1]));
 
 	pub.publish(info);
 
-	cv::imshow("image", rgbimg);
+	for (int i = 0; i < (int)msgs->ranges.size(); ++i) {
 
-	depth_image.convertTo(depth_image, CV_8UC1, 255 / 5 , 0);
+		if (msgs->range_min + 0.05  < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
 
-	cv::imshow("window", depth_image);
+			cv::Point position(250 + msgs->ranges[i] * sin(rad) * 100, 250 + msgs->ranges[i] * cos(rad) * 100);
+			//cv::Point position(50, 50);
+			cv::Scalar color;
+			if (i == 0) {
+				color = cv::Scalar(0, 255, 0);
+				printf("red\n");
+			} else {
+				color = cv::Scalar(0, 0, 255);
+
+			}
+
+			//cv::drawMarker(img, position, color);
+
+			cv::circle(img, position, 1, color, 1);
+
+			//printf("[ %f, %f ]\n", msgs->ranges[i] * sin(rad) * 100, msgs->ranges[i] * cos(rad) * 100);
+		}
+
+		rad += msgs->angle_increment;
+
+	}
+
+	cv::imshow("window", img);
 
 	cv::waitKey(1);
-
-}
-
-/*void depth(const sensor_msgs::Image::ConstPtr& msg) {
-
-	int point[3] = {0, 0, 0};
-	cv::Mat mat;
-
-	minDistancePoint(msg, point);
-
-	cv::Point position(point[1], point[0]);
-
-	cv::Scalar color(0, 0, 255);
-
-	cv::drawMarker(rgbimg, position, color);
-
-	info.data.clear();
-
-	if (flag) {
-		info.data.push_back(calcStraight(msg, point[2]));
-	} else {
-		info.data.push_back(0);
-	}
-
-	info.data.push_back(0.03);
-
-	if (flag) {
-		info.data.push_back(calcAngle(msg, point));
-	} else {
-		info.data.push_back(0);
-	}
-
-	info.data.push_back(0.3);
-
-	pub.publish(info);
-
-	cv::imshow("image", rgbimg);
-	cv::waitKey(1);
-
-}
-*/
-
-
-void rgb(const sensor_msgs::Image::ConstPtr& msg) {
-
-	cv_bridge::CvImagePtr cv_rgb;
-
-	try {
-		// ROSからOpenCVの形式にtoCvCopy()で変換。cv_ptr->imageがcv::Matフォーマット。
-		cv_rgb = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-	} catch (cv_bridge::Exception& e) {
-		ROS_ERROR("cv_bridge exception: %s", e.what());
-		return;
-	}
-
-	rgbimg = cv_rgb->image;
-
-}
-
-void signal(const std_msgs::String::ConstPtr& msg) {
-
-	if (msg->data == "start") flag = true;
-
-	if (msg->data == "stop") flag = false;
-
-	printf("debug\n");
 
 }
 
@@ -267,13 +157,8 @@ int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "followme");
 
-	ros::NodeHandle n;
 
-	//ros::Subscriber sub_depth = n.subscribe("/camera/depth/image_raw", 1000, depth);
-	ros::Subscriber sub = n.subscribe("/camera/depth/points", 1, depth_points);
-	ros::Subscriber follow = n.subscribe("follow_me", 1000, signal);
-	ros::Subscriber followsignal = n.subscribe("/camera/rgb/image_raw", 1, rgb);
-	pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
+	Follow follow;
 
 	ros::spin();
 
