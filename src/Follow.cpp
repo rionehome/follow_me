@@ -42,7 +42,7 @@ public:
 	void update();
 	double calc_normal_distribution(int target_index, int center_index, int index_size);
 	double cost(cv::Point p1, cv::Point p2) {
-		double result = p2.x == 0 && p2.y == 0 ? 0.1 : 10 / hypot(p2.x - p1.x, p2.y - p1.y);
+		double result = p2.x == 0 && p2.y == 0 ? 0.01 : 1 / hypot(p2.x - p1.x, p2.y - p1.y);
 		if (isinf(result)) return 0.1;
 		return  result;
 	}
@@ -92,8 +92,7 @@ void Follow::update() {
 		for (int i = 0; i < (int)ydlider_points.size(); ++i) {
 			data_list[i].point = ydlider_points[i];
 			//data_list[i].existence_rate = data_list[i].existence_rate + cost(ydlider_points[i]) + (normal_distribution / 10);
-			data_list[i].existence_rate = data_list[i].existence_rate * cost(player_point, ydlider_points[i]) +
-			                              data_list[i].existence_rate * calc_normal_distribution(i, player_index, (int)ydlider_points.size());
+			data_list[i].existence_rate = cost(player_point, ydlider_points[i]) + data_list[i].existence_rate * calc_normal_distribution(i, player_index, (int)ydlider_points.size());
 			//data_list[i].existence_rate * calc_normal_distribution(i, 0, (int)ydlider_points.size()) * 2;
 			//printf("%f\n", data_list[i].existence_rate );
 			//data_list[i].existence_rate * calc_normal_distribution(i, player_index, (int)ydlider_points.size());
@@ -134,6 +133,9 @@ void Follow::view_ydlider(std::vector<cv::Point> points) {
 		int y = points[i].y + 1000;
 		cv::circle(img, cv::Point(x, y), 1, color, 1);
 	}
+
+	cv::circle(img, cv::Point(player_point.x + 1000, player_point.y + 1000), 5, cv::Scalar(0, 0, 255), 1);
+
 
 	cv::namedWindow("window", CV_WINDOW_NORMAL);
 	cv::imshow("window", img);
