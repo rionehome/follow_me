@@ -23,7 +23,7 @@ public:
 
 	std_msgs::Float64MultiArray info;
 
-	std::vector<FollowMeLib> v;
+	std::vector<cv::Point> ydlider_msgs;
 
 	ros::NodeHandle n;
 
@@ -51,32 +51,22 @@ Follow::~Follow() {
 void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 
 	cv::Mat img = cv::Mat::zeros(600, 600, CV_8UC3);
-
 	double rad = msgs->angle_min;
 
 	for (int i = 0; i < (int)msgs->ranges.size(); ++i) {
-
+		cv::Point position = cv::Point(-1, -1);
 		if (msgs->range_min + 0.05  < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
-
-			cv::Point position(250 + msgs->ranges[i] * sin(rad) * 100, 250 + msgs->ranges[i] * cos(rad) * 100);
-
-			cv::Scalar color;
-			if (i == 0) {
-				color = cv::Scalar(0, 255, 0);
-			} else {
-				color = cv::Scalar(0, 0, 255);
-			}
-
+			position = cv::Point(250 + msgs->ranges[i] * sin(rad) * 100, 250 + msgs->ranges[i] * cos(rad) * 100);
+			cv::Scalar color(0, 255, 0);
 			cv::circle(img, position, 1, color, 1);
-
+			ydlider_msgs.push_back(position);
+		} else {
+			ydlider_msgs.push_back(position);
 		}
-
 		rad += msgs->angle_increment;
-
 	}
 
 	cv::imshow("window", img);
-
 	cv::waitKey(1);
 }
 
