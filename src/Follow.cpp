@@ -82,7 +82,7 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 	}
 
 	//補完
-	for (int i = 0; i < (int)ydlider_points.size(); ++i) {
+	/*for (int i = 0; i < (int)ydlider_points.size(); ++i) {
 		if (ydlider_points[i].x == 0 && ydlider_points[i].y == 0) {
 			//欠損
 			int first_id = i - 1;
@@ -95,7 +95,7 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 			cv::Point new_point = cv::Point(new_x, new_y);
 			ydlider_points[i] = new_point;
 		}
-	}
+	}*/
 	view_ydlider(ydlider_points);
 }
 
