@@ -42,7 +42,7 @@ public:
 	void update();
 	double calc_normal_distribution(int target_index, int center_index, int index_size);
 	double cost(cv::Point p1, cv::Point p2) {
-		double result = p2.x == 0 && p2.y == 0 ? 0.01 : 1 / hypot(p2.x - p1.x, p2.y - p1.y);
+		double result = p2.x == 0 && p2.y == 0 ? 0.01 : 3 / hypot(p2.x - p1.x, p2.y - p1.y);
 		if (isinf(result)) return 0.1;
 		return  result;
 	}
