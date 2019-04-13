@@ -31,6 +31,8 @@ public:
 	ros::Publisher move_pub;
 	ros::Subscriber ydlider;
 	ros::Subscriber posenet;
+	ros::Subscriber signal;
+
 
 	std_msgs::Float64MultiArray info;
 	std::vector<cv::Point> ydlider_points;
@@ -38,6 +40,7 @@ public:
 	std::vector<SampleData> data_list;
 
 	int player_index;
+	bool status = false;
 	cv::Point player_point;
 
 	ros::NodeHandle n;
@@ -54,6 +57,9 @@ public:
 	void closePosition(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point base);
 	double calcAngle(cv::Point target_point, int target_index);
 	double calcStraight(cv::Point target_point);
+	void signal_callback(const std_msgs::String::ConstPtr& msgs) {
+		status = msgs->data == "start" ? true : false;
+	}
 	void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs);
 	void posenet_callback(const ros_posenet::Poses::ConstPtr& msg);
 };
@@ -65,6 +71,7 @@ Follow::Follow() {
 	this->ydlider = n.subscribe("/scan", 1, &Follow::ydlider_callback, this);
 	this->posenet = n.subscribe("/ros_posenet/poses", 1, &Follow::posenet_callback, this);
 	this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
+	this->signal = n.subscribe("/follow_me_nlp/follow_me", 1, &Follow::signal_callback, this);
 }
 
 Follow::~Follow() {
@@ -160,7 +167,10 @@ void Follow::update() {
 
 	info.data.push_back(0.3);
 
-	move_pub.publish(info);
+	//シグナルがtrueの時のみ実行
+	if (status)
+		move_pub.publish(info);
+
 }
 
 void Follow::view_ydlider(std::vector<cv::Point> points) {
