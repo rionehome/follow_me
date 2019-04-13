@@ -2,14 +2,13 @@
 ## Overview
 自己位置推定のアルゴリズムを利用した、精度の高いfollow meのプログラムです。
 
-##setup
+## setup
 `https://github.com/rionehome/move`からmoveパッケージ、`https://github.com/rionehome/ros_posenet`からposenetパッケージをclone&buildしてください。
 
 ## Usage
 ```
 roslaunch turtlebot_bringup minimal.launch  
-roslaunch followme follow.launch
-
+roslaunch followme follow.launch  
 ```
 
 ## Node
