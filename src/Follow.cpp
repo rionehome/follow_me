@@ -9,7 +9,9 @@
 #include <math.h>
 #include <iostream>
 #include <cmath>
-#include "FollowMeLib.hpp"
+#include "ros_posenet/Keypoint.h"
+#include "ros_posenet/Poses.h"
+#include "ros_posenet/Pose.h"
 
 
 using namespace std;
@@ -26,12 +28,13 @@ public:
 		double existence_rate;
 	} SampleData;
 
-	ros::Publisher pub;
+	ros::Publisher move_pub;
 	ros::Subscriber ydlider;
+	ros::Subscriber posenet;
 
 	std_msgs::Float64MultiArray info;
-
 	std::vector<cv::Point> ydlider_points;
+	std::vector<cv::Point> posenet_points;
 	std::vector<SampleData> data_list;
 
 	int player_index;
@@ -49,17 +52,19 @@ public:
 	void view_ydlider(std::vector<cv::Point> points);
 	void minDistance_Position(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point result);
 	void closePosition(const sensor_msgs::LaserScan::ConstPtr& msgs, cv::Point base);
-	double calcAngle(const sensor_msgs::LaserScan::ConstPtr& cv_image, int min_index);
-	double calcStraight(const sensor_msgs::LaserScan::ConstPtr& cv_image, int mindistance);
+	double calcAngle(cv::Point target_point, int target_index);
+	double calcStraight(cv::Point target_point);
 	void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs);
+	void posenet_callback(const ros_posenet::Poses::ConstPtr& msg);
 };
 
 Follow::Follow() {
 
 	printf("Start class of 'Follow'\n");
 
-	this->ydlider = n.subscribe("/scan", 1000, &Follow::ydlider_callback, this);
-	this->pub = n.advertise<std_msgs::Float64MultiArray>("/move/amount", 1000);
+	this->ydlider = n.subscribe("/scan", 1, &Follow::ydlider_callback, this);
+	this->posenet = n.subscribe("/ros_posenet/poses", 1, &Follow::posenet_callback, this);
+	this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
 }
 
 Follow::~Follow() {
@@ -69,9 +74,30 @@ Follow::~Follow() {
 double Follow::calc_normal_distribution(int target_index, int center_index, int index_size) {
 	double index_distance = abs(target_index - center_index);
 	if (index_distance > index_size / 2) index_distance -= index_size;
-	index_distance *= 1 / 100.0;
+	index_distance *= 1 / 80.0;
 	double normal_distribution = (1 / sqrt(2.0 * M_PI)) * exp((-index_distance * index_distance) / 2.0);
 	return normal_distribution;
+}
+
+double Follow::calcAngle(cv::Point target_point, int target_index) {
+
+	double result = - target_point.x * 0.01;
+	printf("a %f\n", result );
+
+	/*
+	int centerindex = (int)ydlider_points.size() / 2;
+
+	double result;
+
+	result = (5 * (min_index - centerindex)) / 518.0;
+	*/
+	return result;
+}
+
+double Follow::calcStraight(cv::Point target_point) {
+	double result = abs(target_point.y) > 60 ? target_point.y * 0.002 : 0;
+	printf("s %f\n", result );
+	return result;
 }
 
 void Follow::update() {
@@ -119,9 +145,22 @@ void Follow::update() {
 	player_index = max_index;
 	player_point = cv::Point(ydlider_points[player_index]);
 
-	cout << player_point << '\n';
-	printf("%d\n", player_index );
-	printf("%f\n", data_list[max_index].existence_rate );
+	//cout << player_point << '\n';
+	//printf("%d\n", player_index );
+	//printf("%f\n", data_list[max_index].existence_rate );
+
+	//制御
+	info.data.clear();
+
+	info.data.push_back(calcStraight(player_point));
+
+	info.data.push_back(0.03);
+
+	info.data.push_back(calcAngle(player_point, player_index));
+
+	info.data.push_back(0.3);
+
+	move_pub.publish(info);
 }
 
 void Follow::view_ydlider(std::vector<cv::Point> points) {
@@ -135,8 +174,9 @@ void Follow::view_ydlider(std::vector<cv::Point> points) {
 	}
 
 	cv::circle(img, cv::Point(player_point.x + 1000, player_point.y + 1000), 5, cv::Scalar(0, 0, 255), 1);
-
-
+	for (int i = 0; i < (int)posenet_points.size(); ++i) {
+		cv::circle(img, cv::Point((posenet_points[i].x / 10) + 1000, (posenet_points[i].y / 10) + 1000), 5, cv::Scalar(255, 0, 0), 1);
+	}
 	cv::namedWindow("window", CV_WINDOW_NORMAL);
 	cv::imshow("window", img);
 
@@ -176,6 +216,18 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 		}
 	}*/
 	view_ydlider(ydlider_points);
+}
+
+//posenet
+void Follow::posenet_callback(const ros_posenet::Poses::ConstPtr& msg) {
+	//posenetの情報を取得、X座標のみ保持
+	posenet_points.clear();
+	for (int i = 0; i < (int)msg->poses.size(); ++i) {
+		for (int j = 0; j < (int)msg->poses[i].keypoints.size(); ++j) {
+			if (msg->poses[i].keypoints[j].position.z != 0)
+				posenet_points.push_back(cv::Point(msg->poses[i].keypoints[j].position.z, msg->poses[i].keypoints[j].position.x));
+		}
+	}
 }
 
 int main(int argc, char **argv) {
