@@ -40,7 +40,7 @@ public:
 	std::vector<SampleData> data_list;
 
 	int player_index;
-	bool status = false;
+	bool status = true;
 	cv::Point player_point;
 
 	ros::NodeHandle n;
