@@ -3,7 +3,7 @@
 自己位置推定のアルゴリズムを利用した、精度の高いfollow meのプログラムです。
 
 ## setup
-`https://github.com/rionehome/move`からmoveパッケージ、`https://github.com/rionehome/ros_posenet`からposenetパッケージをclone&buildしてください。
+`https://github.com/rionehome/move`からmoveパッケージをclone&buildしてください。
 
 ## Usage
 ```
