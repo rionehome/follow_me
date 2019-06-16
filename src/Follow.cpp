@@ -9,10 +9,6 @@
 #include <math.h>
 #include <iostream>
 #include <cmath>
-#include "ros_posenet/Keypoint.h"
-#include "ros_posenet/Poses.h"
-#include "ros_posenet/Pose.h"
-
 
 using namespace std;
 
@@ -67,7 +63,6 @@ public:
 
 	void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs);
 
-	void posenet_callback(const ros_posenet::Poses::ConstPtr &msg);
 };
 
 Follow::Follow() {
@@ -75,7 +70,6 @@ Follow::Follow() {
 	printf("Start class of 'Follow'\n");
 
 	this->ydlider = n.subscribe("/scan", 1, &Follow::ydlider_callback, this);
-	this->posenet = n.subscribe("/ros_posenet/poses", 1, &Follow::posenet_callback, this);
 	this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
 	this->signal = n.subscribe("/follow_me_nlp/follow_me", 1, &Follow::signal_callback, this);
 }
@@ -239,18 +233,6 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
 	    }
 	}*/
 	view_ydlider(ydlider_points);
-}
-
-//posenet
-void Follow::posenet_callback(const ros_posenet::Poses::ConstPtr &msg) {
-	//posenetの情報を取得、X座標のみ保持
-	posenet_points.clear();
-	for (const auto &pose : msg->poses) {
-		for (const auto &keypoint : pose.keypoints) {
-			if (keypoint.position.z != 0)
-				posenet_points.emplace_back(keypoint.position.z, keypoint.position.x);
-		}
-	}
 }
 
 int main(int argc, char **argv) {
