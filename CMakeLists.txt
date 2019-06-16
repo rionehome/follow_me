@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
-  ros_posenet
+  #ros_posenet
 )
 
 add_definitions(-std=c++11)
