@@ -1,7 +1,6 @@
 <launch>
   <group ns="followme">
     <node pkg="followme" name="Follow" respawn="true" output="screen" type="Follow"/>
-    <node pkg="followme" name="follow_start_node" respawn="false" output="screen" type="start_node.py"/>
   </group>
   <group ns="move">
     <node pkg="move" name="MovementVelocityDesignation" output="screen" respawn="false" type="MovementVelocityDesignation"/>
