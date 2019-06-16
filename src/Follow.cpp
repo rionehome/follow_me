@@ -69,7 +69,6 @@ Follow::Follow() {
 	printf("Start class of 'Follow'\n");
 
 	this->ydlider = n.subscribe("/scan", 1, &Follow::ydlider_callback, this);
-	this->posenet = n.subscribe("/ros_posenet/poses", 1, &Follow::posenet_callback, this);
 	this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
 	this->signal = n.subscribe("/follow_me_nlp/follow_me", 1, &Follow::signal_callback, this);
 }
