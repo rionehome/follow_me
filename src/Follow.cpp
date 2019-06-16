@@ -9,9 +9,9 @@
 #include <math.h>
 #include <iostream>
 #include <cmath>
-#include "ros_posenet/Keypoint.h"
-#include "ros_posenet/Poses.h"
-#include "ros_posenet/Pose.h"
+//#include "ros_posenet/Keypoint.h"
+//#include "ros_posenet/Poses.h"
+//#include "ros_posenet/Pose.h"
 
 
 using namespace std;
@@ -31,7 +31,11 @@ public:
 
 	ros::Publisher move_pub;
 	ros::Subscriber ydlider;
+<<<<<<< HEAD
 	ros::Subscriber posenet;
+=======
+	//ros::Subscriber posenet;
+>>>>>>> 85477c0af943acc94c7c47d2214624f9ac2187e1
 	ros::Subscriber signal;
 
 	std_msgs::Float64MultiArray info;
@@ -39,6 +43,7 @@ public:
 	std::vector<cv::Point> posenet_points;
 	std::vector<SampleData> data_list;
 
+<<<<<<< HEAD
 	int player_index{};
 	bool status = false;
 	cv::Point player_point;
@@ -68,6 +73,42 @@ public:
 	void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs);
 
 	void posenet_callback(const ros_posenet::Poses::ConstPtr &msg);
+=======
+	std_msgs::Float64MultiArray info;
+	std::vector<cv::Point> ydlider_points;
+	std::vector<cv::Point> posenet_points;
+	std::vector<SampleData> data_list;
+
+	int player_index{};
+	bool status = true;
+	cv::Point player_point;
+
+	ros::NodeHandle n;
+
+	void update();
+
+	static double calc_normal_distribution(int target_index, int center_index, int index_size);
+
+	static double cost(const cv::Point &p1, const cv::Point &p2) {
+		double result = p2.x == 0 && p2.y == 0 ? 0.01 : 3 / hypot(p2.x - p1.x, p2.y - p1.y);
+		if (isinf(result)) return 0.1;
+		return result;
+	}
+
+	void view_ydlider(const std::vector<cv::Point> &points);
+
+	static double calcAngle(const cv::Point &target_point);
+
+	static double calcStraight(const cv::Point &target_point);
+
+	void signal_callback(const std_msgs::String::ConstPtr &msgs) {
+		status = msgs->data == "start";
+	}
+
+	void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs);
+
+	//void posenet_callback(const ros_posenet::Poses::ConstPtr &msg);
+>>>>>>> 85477c0af943acc94c7c47d2214624f9ac2187e1
 };
 
 Follow::Follow() {
@@ -75,7 +116,11 @@ Follow::Follow() {
 	printf("Start class of 'Follow'\n");
 
 	this->ydlider = n.subscribe("/scan", 1, &Follow::ydlider_callback, this);
+<<<<<<< HEAD
 	this->posenet = n.subscribe("/ros_posenet/poses", 1, &Follow::posenet_callback, this);
+=======
+	//this->posenet = n.subscribe("/ros_posenet/poses", 1, &Follow::posenet_callback, this);
+>>>>>>> 85477c0af943acc94c7c47d2214624f9ac2187e1
 	this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
 	this->signal = n.subscribe("/follow_me_nlp/follow_me", 1, &Follow::signal_callback, this);
 }
@@ -95,7 +140,11 @@ double Follow::calc_normal_distribution(int target_index, int center_index, int 
 double Follow::calcAngle(const cv::Point &target_point) {
 
 	double result = -target_point.x * 0.015;
+<<<<<<< HEAD
 	//printf("a %f\n", result);
+=======
+	printf("a %f\n", result);
+>>>>>>> 85477c0af943acc94c7c47d2214624f9ac2187e1
 
 	/*
 	int centerindex = (int)ydlider_points.size() / 2;
@@ -109,7 +158,11 @@ double Follow::calcAngle(const cv::Point &target_point) {
 
 double Follow::calcStraight(const cv::Point &target_point) {
 	double result = abs(target_point.y) > 60 ? target_point.y * 0.002 : 0;
+<<<<<<< HEAD
 	//printf("s %f\n", result);
+=======
+	printf("s %f\n", result);
+>>>>>>> 85477c0af943acc94c7c47d2214624f9ac2187e1
 	if (result > 0.4) result = 0.4;
 	return result;
 }
@@ -242,6 +295,7 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
 }
 
 //posenet
+/*
 void Follow::posenet_callback(const ros_posenet::Poses::ConstPtr &msg) {
 	//posenetの情報を取得、X座標のみ保持
 	posenet_points.clear();
@@ -252,6 +306,7 @@ void Follow::posenet_callback(const ros_posenet::Poses::ConstPtr &msg) {
 		}
 	}
 }
+*/
 
 int main(int argc, char **argv) {
 
