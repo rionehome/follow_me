@@ -81,7 +81,7 @@ Follow::Follow() {
 
 	this->ydlider = n.subscribe("/scan", 1, &Follow::ydlider_callback, this);
 	this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
-	this->signal = n.subscribe("/follow_me_nlp/follow_me", 1, &Follow::signal_callback, this);
+	this->signal = n.subscribe("/follow_me/control", 1, &Follow::signal_callback, this);
 }
 
 Follow::~Follow() {

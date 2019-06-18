@@ -20,7 +20,7 @@ roslaunch followme follow.launch
 
 * **`/ros_posenet/poses`** ros_posenetからの結果受け取り ( ros_posenet/Poses )
 
-* **`/follow_me_nlp/follow_me`** follow me 開始・終了のシグナル受け取り ( std_msgs/String )
+* **`/follow_me/control`** follow me 開始・終了のシグナル受け取り ( std_msgs/String )
 
 
 ### Publish Topic
