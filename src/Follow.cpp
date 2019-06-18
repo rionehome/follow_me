@@ -58,7 +58,18 @@ public:
 	static double calcStraight(const cv::Point &target_point);
 
 	void signal_callback(const std_msgs::String::ConstPtr &msgs) {
+		cout << msgs->data << '\n';
 		status = msgs->data == "start";
+		if (!status) {
+			info.data.clear();
+			info.data.push_back(0);
+			info.data.push_back(0);
+			info.data.push_back(0);
+			info.data.push_back(0);
+			move_pub.publish(info);
+		} else {
+			data_list.clear();
+		}
 	}
 
 	void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs);
@@ -162,19 +173,15 @@ void Follow::update() {
 	//printf("%f\n", data_list[max_index].existence_rate );
 
 	//制御
-	info.data.clear();
-
-	info.data.push_back(calcStraight(player_point));
-
-	info.data.push_back(0.03);
-
-	info.data.push_back(calcAngle(player_point));
-
-	info.data.push_back(0.5);
-
 	//シグナルがtrueの時のみ実行
-	if (status)
+	if (status) {
+		info.data.clear();
+		info.data.push_back(calcStraight(player_point));
+		info.data.push_back(0.03);
+		info.data.push_back(calcAngle(player_point));
+		info.data.push_back(0.5);
 		move_pub.publish(info);
+	}
 
 }
 
