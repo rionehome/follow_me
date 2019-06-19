@@ -98,7 +98,7 @@ double Follow::calc_normal_distribution(int target_index, int center_index, int 
 
 double Follow::calcAngle(const cv::Point &target_point) {
 
-	double result = -target_point.x * 0.015;
+	double result = target_point.x * 0.02;
 	//printf("a %f\n", result);
 
 	/*
@@ -112,7 +112,7 @@ double Follow::calcAngle(const cv::Point &target_point) {
 }
 
 double Follow::calcStraight(const cv::Point &target_point) {
-	double result = abs(target_point.y) > 60 ? target_point.y * 0.002 : 0;
+	double result = abs(target_point.y) > 60 ? -target_point.y * 0.002 : 0;
 	//printf("s %f\n", result);
 	if (result > 0.4) result = 0.4;
 	return result;
@@ -128,7 +128,7 @@ void Follow::update() {
 			//double pole_index = i / 10.0;
 			//if (i > (int)ydlider_points.size() / 2.0) pole_index = (i - (int)ydlider_points.size()) / 10.0;
 			//double normal_distribution = (1 / sqrt(2.0 * M_PI)) * exp((-pole_index * pole_index) / 2.0);
-			SampleData d = {i, ydlider_points[i], calc_normal_distribution(i, 0, (int) ydlider_points.size()) *
+			SampleData d = {i, ydlider_points[i], calc_normal_distribution(i, 360, (int) ydlider_points.size()) *
 			                cost(cv::Point(0, 0), ydlider_points[i])
 			               };
 			data_list.push_back(d);
