@@ -8,7 +8,7 @@
 ## Usage
 ```
 roslaunch turtlebot_bringup minimal.launch  
-roslaunch followme follow.launch  
+roslaunch follow_me follow.launch  
 ```
 
 ## Node

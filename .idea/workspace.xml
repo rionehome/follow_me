@@ -97,7 +97,7 @@
   <component name="ProjectConfigurationFiles">
     <option name="files">
       <list>
-        <option value="$PROJECT_DIR$/.idea/followme.iml" />
+        <option value="$PROJECT_DIR$/.idea/follow_me.iml" />
         <option value="$PROJECT_DIR$/.idea/misc.xml" />
         <option value="$PROJECT_DIR$/.idea/vcs.xml" />
         <option value="$PROJECT_DIR$/.idea/modules.xml" />
@@ -120,17 +120,17 @@
           <expand>
             <path>
               <item name="DisplayImage" type="b2602c69:ProjectViewProjectNode" />
-              <item name="followme" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="follow_me" type="47feb1d3:ProjectViewModuleNode" />
             </path>
             <path>
               <item name="DisplayImage" type="b2602c69:ProjectViewProjectNode" />
-              <item name="followme" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="followme" type="462c0819:PsiDirectoryNode" />
+              <item name="follow_me" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="follow_me" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="DisplayImage" type="b2602c69:ProjectViewProjectNode" />
-              <item name="followme" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="followme" type="462c0819:PsiDirectoryNode" />
+              <item name="follow_me" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="follow_me" type="462c0819:PsiDirectoryNode" />
               <item name="src" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>

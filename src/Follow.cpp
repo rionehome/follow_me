@@ -243,7 +243,7 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "followme");
+	ros::init(argc, argv, "follow_me");
 
 	Follow follow;
 
