@@ -1,4 +1,5 @@
 <launch>
+    <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
 	<group ns="follow_me">
 		<node pkg="follow_me" name="Follow" respawn="true" output="screen" type="Follow"/>
 		<node pkg="follow_me" name="follow_start_node" respawn="false" output="screen" type="start_node.py"/>
