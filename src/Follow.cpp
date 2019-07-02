@@ -91,7 +91,7 @@ Follow::~Follow() {
 double Follow::calc_normal_distribution(int target_index, int center_index, int index_size) {
 	double index_distance = abs(target_index - center_index);
 	if (index_distance > index_size / 2) index_distance -= index_size;
-	index_distance *= 1 / 80.0;
+	index_distance *= 1 / 95.0;
 	double normal_distribution = (1 / sqrt(2.0 * M_PI)) * exp((-index_distance * index_distance) / 2.0);
 	return normal_distribution;
 }
@@ -112,9 +112,10 @@ double Follow::calcAngle(const cv::Point &target_point) {
 }
 
 double Follow::calcStraight(const cv::Point &target_point) {
-	double result = abs(target_point.y) > 60 ? -target_point.y * 0.002 : 0;
+	double result = abs(target_point.y) > 100 ? -target_point.y * 0.005 : 0;
 	//printf("s %f\n", result);
-	if (result > 0.4) result = 0.4;
+	if (result > 0.7) result = 0.7;
+    if (result < 0) result = 0;
 	return result;
 }
 
@@ -177,7 +178,7 @@ void Follow::update() {
 	if (status) {
 		info.data.clear();
 		info.data.push_back(calcStraight(player_point));
-		info.data.push_back(0.03);
+		info.data.push_back(0.04);
 		info.data.push_back(calcAngle(player_point));
 		info.data.push_back(0.5);
 		move_pub.publish(info);
