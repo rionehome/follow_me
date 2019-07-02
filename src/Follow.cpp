@@ -115,7 +115,7 @@ double Follow::calcStraight(const cv::Point &target_point) {
 	double result = abs(target_point.y) > 100 ? -target_point.y * 0.005 : 0;
 	//printf("s %f\n", result);
 	if (result > 0.7) result = 0.7;
-    if (result < 0) result = 0;
+	if (result < 0) result = 0;
 	return result;
 }
 
@@ -239,7 +239,7 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
 	        ydlider_points[i] = new_point;
 	    }
 	}*/
-	view_ydlider(ydlider_points);
+	//view_ydlider(ydlider_points);
 }
 
 int main(int argc, char **argv) {
