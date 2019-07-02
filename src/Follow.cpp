@@ -183,14 +183,6 @@ void Follow::update() {
     for (int i = 0; i < (int) ydlider_points.size(); ++i) {
         data_list[i].existence_rate *= 1 / total;
     }
-
-    player_index = max_index;
-    player_point = cv::Point(ydlider_points[player_index]);
-    follow_me::FollowOutput output;
-    output.index = player_index;
-    output.range = ydlider_ranges[player_index];
-    output_pub.publish(output);
-
     //cout << player_point << '\n';
     //printf("%d\n", player_index );
     //printf("%f\n", data_list[max_index].existence_rate );
@@ -198,6 +190,13 @@ void Follow::update() {
     //制御
     //シグナルがtrueの時のみ実行
     if (status) {
+        player_index = max_index;
+        player_point = cv::Point(ydlider_points[player_index]);
+        follow_me::FollowOutput output;
+        output.index = player_index;
+        output.range = ydlider_ranges[player_index];
+        output_pub.publish(output);
+
         info.data.clear();
         info.data.push_back(calcStraight(player_point));
         info.data.push_back(0.08);
