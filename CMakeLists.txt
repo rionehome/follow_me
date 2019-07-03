@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   message_generation
-  #ros_posenet
 )
 
 add_definitions(-std=c++11)
@@ -54,7 +53,7 @@ add_definitions(-std=c++11)
 ## Generate messages in the 'msg' folder
 add_message_files(
    FILES
-   Follow.msg
+   FollowOutput.msg
 )
 
 ## Generate services in the 'srv' folder

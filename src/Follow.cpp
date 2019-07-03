@@ -9,7 +9,7 @@
 #include <math.h>
 #include <iostream>
 #include <cmath>
-#include <std_msgs/Int32.h>
+#include <follow_me/FollowOutput.h>
 
 using namespace std;
 
@@ -27,17 +27,18 @@ public:
     } SampleData;
 
     ros::Publisher move_pub;
-    ros::Publisher index_pub;
+    ros::Publisher output_pub;
     ros::Subscriber ydlider;
     ros::Subscriber posenet;
     ros::Subscriber signal;
 
     std_msgs::Float64MultiArray info;
     std::vector<cv::Point> ydlider_points;
+    std::vector<double> ydlider_ranges;
     std::vector<cv::Point> posenet_points;
     std::vector<SampleData> data_list;
 
-    int player_index;
+    int player_index = -1;
     bool status = false;
     bool move_follow_flag = false;
     cv::Point player_point;
@@ -85,7 +86,7 @@ Follow::Follow() {
     this->ydlider = n.subscribe("/scan", 1, &Follow::ydlider_callback, this);
     this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
     this->signal = n.subscribe("/follow_me/control", 1, &Follow::signal_callback, this);
-    this->index_pub = n.advertise<std_msgs::Int32>("/follow_me/player_index", 1000);
+    this->output_pub = n.advertise<follow_me::FollowOutput>("/follow_me/output", 1000);
 }
 
 Follow::~Follow() {
@@ -185,9 +186,10 @@ void Follow::update() {
 
     player_index = max_index;
     player_point = cv::Point(ydlider_points[player_index]);
-    std_msgs::Int32 p_index;
-    p_index.data = player_index;
-    this->index_pub.publish(p_index);
+    follow_me::FollowOutput output;
+    output.index = player_index;
+    output.range = ydlider_ranges[player_index];
+    output_pub.publish(output);
 
     //cout << player_point << '\n';
     //printf("%d\n", player_index );
@@ -217,8 +219,8 @@ void Follow::view_ydlider(const std::vector<cv::Point> &points) {
     }
 
     cv::circle(img, cv::Point(player_point.x + 1000, player_point.y + 1000), 5, cv::Scalar(0, 0, 255), 1);
-    for (auto &posenet_point : posenet_points) {
-        cv::circle(img, cv::Point((posenet_point.x / 10) + 1000, (posenet_point.y / 10) + 1000), 5,
+    for (auto &ydlidar_point : posenet_points) {
+        cv::circle(img, cv::Point((ydlidar_point.x / 10) + 1000, (ydlidar_point.y / 10) + 1000), 5,
                    cv::Scalar(255, 0, 0), 1);
     }
     cv::namedWindow("window", CV_WINDOW_NORMAL);
@@ -232,6 +234,7 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
 
     double rad = msgs->angle_min;
     ydlider_points.clear();
+    ydlider_ranges.clear();
 
     for (int i = 0; i < (int) msgs->ranges.size(); ++i) {
         cv::Point position;
@@ -241,6 +244,7 @@ void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
         } else {
             ydlider_points.push_back(position);
         }
+        ydlider_ranges.push_back(msgs->ranges[i]);
         rad += msgs->angle_increment;
     }
 
