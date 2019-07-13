@@ -16,7 +16,7 @@
 Follow::Follow()
 {
     printf("Start class of 'Follow'\n");
-    this->ydlider_sub = n.subscribe("/scan", 1, &Follow::ydlider_callback, this);
+    this->ydlidar_sub = n.subscribe("/scan", 1, &Follow::ydlidar_callback, this);
     this->odom_sub = n.subscribe("/odom", 1000, &Follow::odom_callback, this);
     this->signal = n.subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
     this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
@@ -28,25 +28,79 @@ Follow::~Follow()
     printf("Shutdown class of 'Follow'\n");
 }
 
-void Follow::ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
+void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
 {
     /*
-     * ydliderからの情報を取得
+     * ydlidarからの情報を取得
      */
+    std::vector<cv::Point> ydlidar_points;
     double rad = msgs->angle_min;
-    ydlider_points.clear();
-    ydlider_ranges.clear();
-    for (int i = 0; i < (int) msgs->ranges.size(); ++i) {
+    ydlidar_points.clear();
+    ydlidar_ranges.clear();
+    for (const auto &range : msgs->ranges) {
         cv::Point position;
-        if (msgs->range_min + 0.05 < msgs->ranges[i] && msgs->range_max > msgs->ranges[i]) {
-            position = cv::Point(msgs->ranges[i] * sin(rad) * 100, -msgs->ranges[i] * cos(rad) * 100);
-            ydlider_points.push_back(position);
+        if (msgs->range_min + 0.05 < range && msgs->range_max > range) {
+            position = cv::Point(range * sin(rad) * 100, -range * cos(rad) * 100);
+            ydlidar_points.push_back(position);
         }
         else {
-            ydlider_points.push_back(position);
+            ydlidar_points.push_back(position);
         }
-        ydlider_ranges.push_back(msgs->ranges[i]);
+        ydlidar_ranges.push_back(range);
         rad += msgs->angle_increment;
+    }
+
+    if (data_list.empty()) {
+        //初期化
+        for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
+            //正規分布に従って初期化
+            SampleData d = {i, ydlidar_points[i], calc_normal_distribution(i, 360, (int) ydlidar_points.size()) *
+                cost(cv::Point(0, 0), ydlidar_points[i])
+            };
+            data_list.push_back(d);
+        }
+    }
+    else {
+        //更新
+        for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
+            data_list[i].point = ydlidar_points[i];
+            data_list[i].existence_rate = cost(player_point, ydlidar_points[i]) + data_list[i].existence_rate *
+                calc_normal_distribution(i, player_index, (int) ydlidar_points.size());
+        }
+    }
+    //正規化
+    double total = 0.0;
+    double max = 0.0;
+    int max_index = 0;
+
+    for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
+        if (data_list[i].existence_rate == 0) data_list[i].existence_rate = 0.001;
+        total += data_list[i].existence_rate;
+        if (max < data_list[i].existence_rate) {
+            max = data_list[i].existence_rate;
+            max_index = i;
+        }
+    }
+    for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
+        data_list[i].existence_rate *= 1 / total;
+    }
+
+    //制御
+    //シグナルがtrueの時のみ実行
+    if (status) {
+        player_index = max_index;
+        player_point = cv::Point(ydlidar_points[player_index]);
+        follow_me::FollowOutput output;
+        output.index = player_index;
+        output.range = ydlidar_ranges[player_index];
+        output_pub.publish(output);
+
+        info.data.clear();
+        info.data.push_back(calcStraight(player_point));
+        info.data.push_back(0.08);
+        info.data.push_back(calcAngle(player_point));
+        info.data.push_back(0.5);
+        move_pub.publish(info);
     }
 }
 
@@ -92,66 +146,7 @@ double Follow::calcStraight(const cv::Point &target_point)
     return result;
 }
 
-void Follow::update()
-{
-    if ((int) ydlider_points.size() == 0) return;
-    if (data_list.empty()) {
-        //初期化
-        for (int i = 0; i < (int) ydlider_points.size(); ++i) {
-            //正規分布に従って初期化
-            SampleData d = {i, ydlider_points[i], calc_normal_distribution(i, 360, (int) ydlider_points.size()) *
-                cost(cv::Point(0, 0), ydlider_points[i])
-            };
-            data_list.push_back(d);
-        }
-    }
-    else {
-        //更新
-        for (int i = 0; i < (int) ydlider_points.size(); ++i) {
-            data_list[i].point = ydlider_points[i];
-            data_list[i].existence_rate = cost(player_point, ydlider_points[i]) + data_list[i].existence_rate *
-                calc_normal_distribution(i,
-                                         player_index,
-                                         (int) ydlider_points.size());
-        }
-    }
-    //正規化
-    double total = 0.0;
-    double max = 0.0;
-    int max_index = 0;
-
-    for (int i = 0; i < (int) ydlider_points.size(); ++i) {
-        if (data_list[i].existence_rate == 0) data_list[i].existence_rate = 0.001;
-        total += data_list[i].existence_rate;
-        if (max < data_list[i].existence_rate) {
-            max = data_list[i].existence_rate;
-            max_index = i;
-        }
-    }
-    for (int i = 0; i < (int) ydlider_points.size(); ++i) {
-        data_list[i].existence_rate *= 1 / total;
-    }
-
-    //制御
-    //シグナルがtrueの時のみ実行
-    if (status) {
-        player_index = max_index;
-        player_point = cv::Point(ydlider_points[player_index]);
-        follow_me::FollowOutput output;
-        output.index = player_index;
-        output.range = ydlider_ranges[player_index];
-        output_pub.publish(output);
-
-        info.data.clear();
-        info.data.push_back(calcStraight(player_point));
-        info.data.push_back(0.08);
-        info.data.push_back(calcAngle(player_point));
-        info.data.push_back(0.5);
-        move_pub.publish(info);
-    }
-}
-
-void Follow::view_ydlider(const std::vector<cv::Point> &points)
+void Follow::view_ydlidar(const std::vector<cv::Point> &points)
 {
     cv::Mat img = cv::Mat::zeros(2000, 2000, CV_8UC3);
     cv::Scalar color(0, 255, 0);
@@ -161,10 +156,6 @@ void Follow::view_ydlider(const std::vector<cv::Point> &points)
         cv::circle(img, cv::Point(x, y), 1, color, 1);
     }
     cv::circle(img, cv::Point(player_point.x + 1000, player_point.y + 1000), 5, cv::Scalar(0, 0, 255), 1);
-    for (auto &ydlidar_point : posenet_points) {
-        cv::circle(img, cv::Point((ydlidar_point.x / 10) + 1000, (ydlidar_point.y / 10) + 1000), 5,
-                   cv::Scalar(255, 0, 0), 1);
-    }
     cv::namedWindow("window", CV_WINDOW_NORMAL);
     cv::imshow("window", img);
     cv::waitKey(1);
@@ -174,9 +165,6 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "follow_me");
     Follow follow;
-    while (ros::ok()) {
-        ros::spinOnce();
-        follow.update();
-    }
+    ros::spin();
     return 0;
 }

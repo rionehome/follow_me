@@ -35,14 +35,12 @@ public:
 
     ros::Publisher move_pub;
     ros::Publisher output_pub;
-    ros::Subscriber ydlider_sub;
+    ros::Subscriber ydlidar_sub;
     ros::Subscriber signal;
     ros::Subscriber odom_sub;
 
     std_msgs::Float64MultiArray info;
-    std::vector<cv::Point> ydlider_points;
-    std::vector<double> ydlider_ranges;
-    std::vector<cv::Point> posenet_points;
+    std::vector<double> ydlidar_ranges;
     std::vector<SampleData> data_list;
 
     int player_index = -1;
@@ -51,8 +49,6 @@ public:
     cv::Point player_point;
 
     ros::NodeHandle n;
-
-    void update();
 
     static double calc_normal_distribution(int target_index, int center_index, int index_size);
 
@@ -63,7 +59,7 @@ public:
         return result;
     }
 
-    void view_ydlider(const std::vector<cv::Point> &points);
+    void view_ydlidar(const std::vector<cv::Point> &points);
 
     static double calcAngle(const cv::Point &target_point);
 
@@ -86,7 +82,7 @@ public:
         }
     }
 
-    void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr &msgs);
+    void ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs);
 
     void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
 
