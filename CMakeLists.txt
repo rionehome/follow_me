@@ -8,12 +8,12 @@ project(follow_me)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
-  roscpp
-  sensor_msgs
-  std_msgs
-  message_generation
-)
+        cv_bridge
+        roscpp
+        sensor_msgs
+        std_msgs
+        message_generation
+        )
 
 add_definitions(-std=c++11)
 
@@ -52,8 +52,8 @@ add_definitions(-std=c++11)
 
 ## Generate messages in the 'msg' folder
 add_message_files(
-   FILES
-   FollowOutput.msg
+        FILES
+        Output.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -71,10 +71,10 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   std_msgs
- )
+generate_messages(
+        DEPENDENCIES
+        std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -106,10 +106,10 @@ add_message_files(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES follow_me
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS system_lib
+        #  INCLUDE_DIRS include
+        #  LIBRARIES follow_me
+        #  CATKIN_DEPENDS roscpp rospy std_msgs
+        #  DEPENDS system_lib
 )
 
 ###########
@@ -119,8 +119,8 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
+        # include
+        ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -200,19 +200,12 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-cmake_minimum_required( VERSION 2.8 )
-project( DisplayImage )
-set( OpenCV_DIR "/usr/local/include/opencv2/" )
-find_package( OpenCV REQUIRED )
+cmake_minimum_required(VERSION 2.8)
+project(DisplayImage)
+set(OpenCV_DIR "/usr/local/include/opencv2/")
+find_package(OpenCV REQUIRED)
 
 set(CMAKE_CXX_FLAGS "-pthread")
 
-add_executable(Follow src/Follow.cpp)
+add_executable(Follow src/Follow.cpp include/followme/Follow_H.h)
 target_link_libraries(Follow ${OpenCV_LIBS} ${catkin_LIBRARIES})
-add_executable(Follow_URG src/Follow_URG.cpp)
-target_link_libraries(Follow_URG  ${OpenCV_LIBS} ${catkin_LIBRARIES})
-
-add_executable(Follow_NiTE2 src/Follow_NiTE2.cpp)
-target_link_libraries(Follow_NiTE2 ${OpenCV_LIBS}  ${catkin_LIBRARIES})
-add_executable(Follow_ydlider src/Follow_ydlider.cpp)
-target_link_libraries(Follow_ydlider ${OpenCV_LIBS} ${catkin_LIBRARIES})
