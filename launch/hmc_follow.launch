@@ -1,9 +1,0 @@
-<launch>
-  <group ns="follow_me">
-    <node pkg="follow_me" name="Follow" respawn="true" output="screen" type="Follow"/>
-  </group>
-  <group ns="move">
-    <node pkg="move" name="MovementVelocityDesignation" output="screen" respawn="false" type="MovementVelocityDesignation"/>
-  </group>
-  <include file="$(find ydlidar)/launch/lidar.launch"/>
-</launch>
