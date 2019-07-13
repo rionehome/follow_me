@@ -102,7 +102,7 @@ void depth(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "followme_urg");
+	ros::init(argc, argv, "follow_me_urg");
 
 	ros::NodeHandle n;
 

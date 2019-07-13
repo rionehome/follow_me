@@ -104,7 +104,7 @@ void selectUser(const std_msgs::Float64MultiArray::ConstPtr& msg) {
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "followme");
+	ros::init(argc, argv, "follow_me");
 
 	ros::NodeHandle n;
 

@@ -137,7 +137,7 @@ void depth(const sensor_msgs::LaserScan::ConstPtr& msgs) {
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "followme_ydlider");
+	ros::init(argc, argv, "follow_me_ydlider");
 
 	ros::NodeHandle n;
 
