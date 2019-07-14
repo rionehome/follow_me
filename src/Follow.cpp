@@ -1,26 +1,14 @@
-#include "ros/ros.h"
-#include "std_msgs/String.h"
-#include "sensor_msgs/Image.h"
 #include "../include/followme/Follow_H.h"
-#include <sensor_msgs/LaserScan.h>
-#include <geometry_msgs/Twist.h>
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/highgui.hpp>
-#include <std_msgs/Float64MultiArray.h>
-#include <math.h>
-#include <iostream>
-#include <cmath>
-#include <follow_me/FollowOutput.h>
-#include <nav_msgs/Odometry.h>
 
-Follow::Follow()
+Follow::Follow(ros::NodeHandle *n)
 {
     printf("Start class of 'Follow'\n");
-    this->ydlidar_sub = n.subscribe("/scan", 1, &Follow::ydlidar_callback, this);
-    this->odom_sub = n.subscribe("/odom", 1000, &Follow::odom_callback, this);
-    this->signal = n.subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
-    this->move_pub = n.advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
-    this->output_pub = n.advertise<follow_me::FollowOutput>("/follow_me/output", 1000);
+    this->ydlidar_sub = n->subscribe("/scan", 1, &Follow::ydlidar_callback, this);
+    this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
+    this->signal = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
+    this->move_pub = n->advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
+    this->output_pub = n->advertise<follow_me::FollowOutput>("/follow_me/output", 1000);
+    n->getParam("/Follow/status", status);
 }
 
 Follow::~Follow()
@@ -40,7 +28,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
     for (const auto &range : msgs->ranges) {
         cv::Point position;
         if (msgs->range_min + 0.05 < range && msgs->range_max > range) {
-            position = cv::Point(range * sin(rad) * 100, -range * cos(rad) * 100);
+            position = cv::Point((int) (range * sin(rad) * 100), (int) (-range * cos(rad) * 100));
             ydlidar_points.push_back(position);
         }
         else {
@@ -112,7 +100,7 @@ void Follow::odom_callback(const nav_msgs::Odometry::ConstPtr &odom)
 double Follow::calc_normal_distribution(int target_index, int center_index, int index_size)
 {
     double index_distance = abs(target_index - center_index);
-    if (index_distance > index_size / 2) index_distance -= index_size;
+    if (index_distance > index_size / 2.0) index_distance -= index_size;
     index_distance *= 1 / 95.0;
     double normal_distribution = (1 / sqrt(2.0 * M_PI)) * exp((-index_distance * index_distance) / 2.0);
     return normal_distribution;
@@ -164,7 +152,8 @@ void Follow::view_ydlidar(const std::vector<cv::Point> &points)
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "follow_me");
-    Follow follow;
+    ros::NodeHandle n;
+    Follow follow(&n);
     ros::spin();
     return 0;
 }

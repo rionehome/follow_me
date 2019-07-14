@@ -21,8 +21,7 @@
 class Follow
 {
 public:
-    Follow();
-
+    explicit Follow(ros::NodeHandle *n);
     ~Follow();
 
     //インデックスごとの構造体を作成
@@ -47,8 +46,6 @@ public:
     bool status = false;
     bool move_follow_flag = false;
     cv::Point player_point;
-
-    ros::NodeHandle n;
 
     static double calc_normal_distribution(int target_index, int center_index, int index_size);
 
