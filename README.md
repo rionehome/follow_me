@@ -18,8 +18,6 @@ roslaunch follow_me follow.launch
 
 * **`/scan`** ydlidarの情報受け取り（ sensor_msgs/LaserScan ）
 
-* **`/ros_posenet/poses`** ros_posenetからの結果受け取り ( ros_posenet/Poses )
-
 * **`/follow_me/control`** follow me 開始・終了のシグナル受け取り ( std_msgs/String )
 
 
