@@ -13,33 +13,33 @@
 #include <iostream>
 #include <cmath>
 #include <follow_me/FollowOutput.h>
+#include <nav_msgs/Odometry.h>
 
 #ifndef SRC_FOLLOW_H_H
 #define SRC_FOLLOW_H_H
 
-class Follow {
+class Follow
+{
 public:
-    Follow();
-
+    explicit Follow(ros::NodeHandle *n);
     ~Follow();
 
     //インデックスごとの構造体を作成
-    typedef struct {
-      int index;
-      cv::Point point;
-      double existence_rate;
+    typedef struct
+    {
+        int index;
+        cv::Point point;
+        double existence_rate;
     } SampleData;
 
     ros::Publisher move_pub;
     ros::Publisher output_pub;
-    ros::Subscriber ydlider;
-    ros::Subscriber posenet;
+    ros::Subscriber ydlidar_sub;
     ros::Subscriber signal;
+    ros::Subscriber odom_sub;
 
     std_msgs::Float64MultiArray info;
-    std::vector<cv::Point> ydlider_points;
-    std::vector<double> ydlider_ranges;
-    std::vector<cv::Point> posenet_points;
+    std::vector<double> ydlidar_ranges;
     std::vector<SampleData> data_list;
 
     int player_index = -1;
@@ -47,29 +47,25 @@ public:
     bool move_follow_flag = false;
     cv::Point player_point;
 
-    ros::NodeHandle n;
-
-    void update();
-
     static double calc_normal_distribution(int target_index, int center_index, int index_size);
 
-    static double cost(const cv::Point& p1, const cv::Point& p2)
+    static double cost(const cv::Point &p1, const cv::Point &p2)
     {
-        double result = p2.x==0 && p2.y==0 ? 0.01 : 3/hypot(p2.x-p1.x, p2.y-p1.y);
+        double result = p2.x == 0 && p2.y == 0 ? 0.01 : 3 / hypot(p2.x - p1.x, p2.y - p1.y);
         if (std::isinf(result)) return 0.1;
         return result;
     }
 
-    void view_ydlider(const std::vector<cv::Point>& points);
+    void view_ydlidar(const std::vector<cv::Point> &points);
 
-    static double calcAngle(const cv::Point& target_point);
+    static double calcAngle(const cv::Point &target_point);
 
-    double calcStraight(const cv::Point& target_point);
+    double calcStraight(const cv::Point &target_point);
 
-    void signal_callback(const std_msgs::String::ConstPtr& msgs)
+    void signal_callback(const std_msgs::String::ConstPtr &msgs)
     {
         std::cout << msgs->data << '\n';
-        status = msgs->data=="start";
+        status = msgs->data == "start";
         if (!status) {
             info.data.clear();
             info.data.push_back(0);
@@ -83,7 +79,28 @@ public:
         }
     }
 
-    void ydlider_callback(const sensor_msgs::LaserScan::ConstPtr& msgs);
+    void ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs);
+
+    void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
+
+    double toQuaternion_ang(double w, double z)
+    {
+        return std::abs((z > 0 ? 1 : 360) - this->toAngle(acos(w) * 2));
+    }
+
+    static double toQuaternion_rad(double w, double z)
+    {
+        return acos(w) * (z > 0 ? 1 : -1) * 2;
+    }
+
+    static double toAngle(double rad)
+    { return rad * 180 / M_PI; }
+
+    static double toRadian(double angle)
+    { return (angle * M_PI) / 180; }
+
+    static double sign(double A)
+    { return A == 0 ? 0 : A / std::abs(A); }
 };
 
 #endif //SRC_FOLLOW_H_H
