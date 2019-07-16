@@ -12,7 +12,7 @@
 #include <math.h>
 #include <iostream>
 #include <cmath>
-#include <follow_me/FollowOutput.h>
+#include <follow_me/Output.h>
 #include <nav_msgs/Odometry.h>
 
 #ifndef SRC_FOLLOW_H_H

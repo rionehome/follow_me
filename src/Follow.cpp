@@ -1,3 +1,4 @@
+#include <follow_me/Output.h>
 #include "../include/followme/Follow_H.h"
 
 Follow::Follow(ros::NodeHandle *n)
@@ -7,7 +8,7 @@ Follow::Follow(ros::NodeHandle *n)
     this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
     this->signal = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
     this->move_pub = n->advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
-    this->output_pub = n->advertise<follow_me::FollowOutput>("/follow_me/output", 1000);
+    this->output_pub = n->advertise<follow_me::Output>("/follow_me/output", 1000);
     n->getParam("/Follow/status", status);
 }
 
@@ -78,7 +79,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
     if (status) {
         player_index = max_index;
         player_point = cv::Point(ydlidar_points[player_index]);
-        follow_me::FollowOutput output;
+        follow_me::Output output = follow_me::Output();
         output.index = player_index;
         output.range = ydlidar_ranges[player_index];
         output_pub.publish(output);
