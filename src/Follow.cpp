@@ -6,9 +6,9 @@ Follow::Follow(ros::NodeHandle *n)
     printf("Start class of 'Follow'\n");
     this->ydlidar_sub = n->subscribe("/scan", 1, &Follow::ydlidar_callback, this);
     this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
-    this->signal = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
-    this->move_pub = n->advertise<std_msgs::Float64MultiArray>("/move/velocity", 1000);
-    this->output_pub = n->advertise<follow_me::Output>("/follow_me/output", 1000);
+    this->signal_sub = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
+    this->velocity_pub = n->advertise<move::Velocity>("/move/velocity", 1000);
+    //this->output_pub = n->advertise<follow_me::Output>("/follow_me/output", 1000);
     n->getParam("/Follow/status", status);
 }
 
@@ -79,17 +79,17 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
     if (status) {
         player_index = max_index;
         player_point = cv::Point(ydlidar_points[player_index]);
+        /*
         follow_me::Output output = follow_me::Output();
         output.index = player_index;
         output.range = ydlidar_ranges[player_index];
         output_pub.publish(output);
+        */
 
-        info.data.clear();
-        info.data.push_back(calcStraight(player_point));
-        info.data.push_back(0.08);
-        info.data.push_back(calcAngle(player_point));
-        info.data.push_back(0.5);
-        move_pub.publish(info);
+        move::Velocity velocity;
+        velocity.linear_rate = calcStraight(player_point);
+        velocity.angular_rate = calcAngle(player_point);
+        velocity_pub.publish(velocity);
     }
 }
 
@@ -110,6 +110,8 @@ double Follow::calc_normal_distribution(int target_index, int center_index, int 
 double Follow::calcAngle(const cv::Point &target_point)
 {
     double result = target_point.x * 0.02;
+    result = result / 1.9;
+    printf("angular:%f\n", result);
     return result;
 }
 
@@ -132,6 +134,7 @@ double Follow::calcStraight(const cv::Point &target_point)
         result = 0;
         move_follow_flag = false;
     }
+    result = result / 0.7;
     return result;
 }
 
