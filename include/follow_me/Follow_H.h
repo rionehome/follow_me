@@ -13,6 +13,7 @@
 #include <iostream>
 #include <cmath>
 #include <follow_me/Output.h>
+#include "move/Velocity.h"
 #include <nav_msgs/Odometry.h>
 
 #ifndef SRC_FOLLOW_H_H
@@ -32,10 +33,10 @@ public:
         double existence_rate;
     } SampleData;
 
-    ros::Publisher move_pub;
-    ros::Publisher output_pub;
+    ros::Publisher velocity_pub;
+    //ros::Publisher output_pub;
     ros::Subscriber ydlidar_sub;
-    ros::Subscriber signal;
+    ros::Subscriber signal_sub;
     ros::Subscriber odom_sub;
 
     std_msgs::Float64MultiArray info;
