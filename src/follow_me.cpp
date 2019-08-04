@@ -122,19 +122,18 @@ double Follow::calcStraight(const cv::Point &target_point)
      * ただし、move_follow_flagによってしきい値を変更する
      */
     double result;
-    if (move_follow_flag) {
-        result = abs(target_point.y) > 120 ? -target_point.y * 0.008 : 0;
+    if (abs(target_point.y) > 120) {
+        result = -target_point.y * 0.008;
+    }
+    else if (abs(target_point.y) < 100) {
+        result = -0.15;
     }
     else {
-        result = abs(target_point.y) > 120 ? -target_point.y * 0.01 : 0;
-    }
-    move_follow_flag = true;
-    if (result > 0.7) result = 0.7;
-    if (result <= 0) {
         result = 0;
-        move_follow_flag = false;
     }
+    if (result > 0.7) result = 0.7;
     result = result / 0.7;
+    std::cout << result << '\n';
     return result;
 }
 
