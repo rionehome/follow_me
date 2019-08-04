@@ -7,7 +7,7 @@
 	    <param name="status" value="true"/>
 	</node>
 
-	<node pkg="move" name="MovementVelocityDesignation" output="screen" respawn="false" type="MovementVelocityDesignation"/>
+	<node pkg="move" name="velocity" output="screen" respawn="false" type="velocity"/>
 
 	<node name="ydlidar_node"  pkg="ydlidar"  type="ydlidar_node" output="screen" respawn="false" >
 		<param name="port"         type="string" value="/dev/ydlidar"/>

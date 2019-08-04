@@ -68,12 +68,6 @@ public:
         std::cout << msgs->data << '\n';
         status = msgs->data == "start";
         if (!status) {
-            info.data.clear();
-            info.data.push_back(0);
-            info.data.push_back(0);
-            info.data.push_back(0);
-            info.data.push_back(0);
-            move_pub.publish(info);
         }
         else {
             data_list.clear();
