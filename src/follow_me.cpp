@@ -1,4 +1,3 @@
-#include <follow_me/Output.h>
 #include "../include/follow_me/follow_me.h"
 
 Follow::Follow(ros::NodeHandle *n)
@@ -8,7 +7,6 @@ Follow::Follow(ros::NodeHandle *n)
     this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
     this->signal_sub = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
     this->velocity_pub = n->advertise<move::Velocity>("/move/velocity", 1000);
-    //this->output_pub = n->advertise<follow_me::Output>("/follow_me/output", 1000);
     n->getParam("/Follow/status", status);
 }
 

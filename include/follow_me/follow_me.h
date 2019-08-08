@@ -12,7 +12,6 @@
 #include <math.h>
 #include <iostream>
 #include <cmath>
-#include <follow_me/Output.h>
 #include "move/Velocity.h"
 #include <nav_msgs/Odometry.h>
 
@@ -34,7 +33,6 @@ public:
     } SampleData;
 
     ros::Publisher velocity_pub;
-    //ros::Publisher output_pub;
     ros::Subscriber ydlidar_sub;
     ros::Subscriber signal_sub;
     ros::Subscriber odom_sub;
