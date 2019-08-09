@@ -107,7 +107,7 @@ double Follow::calc_normal_distribution(int target_index, int center_index, int 
 
 double Follow::calcAngle(const cv::Point &target_point)
 {
-    double result = target_point.x * 0.02;
+    double result = target_point.x * 0.008;
     result = result / 1.9;
     printf("angular:%f\n", result);
     return result;
@@ -120,11 +120,11 @@ double Follow::calcStraight(const cv::Point &target_point)
      * ただし、move_follow_flagによってしきい値を変更する
      */
     double result;
-    if (abs(target_point.y) > 120) {
+    if (abs(target_point.y) > 100) {
         result = -target_point.y * 0.008;
     }
-    else if (abs(target_point.y) < 100) {
-        result = -0.15;
+    else if (abs(target_point.y) < 80) {
+        result = (100 - abs(target_point.y)) * -0.004;
     }
     else {
         result = 0;
