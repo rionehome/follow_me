@@ -66,8 +66,13 @@ public:
         std::cout << msgs->data << '\n';
         status = msgs->data == "start";
         if (!status) {
+            move::Velocity velocity;
+            velocity.linear_rate = 0;
+            velocity.angular_rate = 0;
+            velocity_pub.publish(velocity);
         }
         else {
+            printf("開始\n");
             data_list.clear();
         }
     }

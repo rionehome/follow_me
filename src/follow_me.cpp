@@ -7,7 +7,7 @@ Follow::Follow(ros::NodeHandle *n)
     this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
     this->signal_sub = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
     this->velocity_pub = n->advertise<move::Velocity>("/move/velocity", 1000);
-    n->getParam("/Follow/status", status);
+    n->getParam("/follow_me/status", status);
 }
 
 Follow::~Follow()
