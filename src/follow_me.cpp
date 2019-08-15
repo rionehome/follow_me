@@ -24,6 +24,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
     double rad = msgs->angle_min;
     ydlidar_points.clear();
     ydlidar_ranges.clear();
+
     for (const auto &range : msgs->ranges) {
         cv::Point position;
         if (msgs->range_min + 0.05 < range && msgs->range_max > range) {
@@ -49,11 +50,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
     }
     else {
         //更新
-        /*
-         * 回転で生じた誤差を修正
-         */
-
-
+        this->updatePlayerPoint(msgs);
         for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
             data_list[i].point = ydlidar_points[i];
             data_list[i].existence_rate = cost(player_point, ydlidar_points[i]) + data_list[i].existence_rate *
@@ -142,9 +139,15 @@ double Follow::calcStraight(const cv::Point &target_point)
     return result;
 }
 
-void Follow::updatePlayerPoint()
+void Follow::updatePlayerPoint(const sensor_msgs::LaserScan::ConstPtr &msgs)
 {
-    //(this->sensor_degree-this->last_degree)
+    double relative_theta = this->toRadian(this->last_degree - this->sensor_degree);
+    double relative_x = this->player_point.x;
+    double relative_y = this->player_point.y;
+
+    //this->player_point.x = relative_x * cos(relative_theta) - relative_y * sin(relative_theta);
+    //this->player_point.y = relative_x * sin(relative_theta) + relative_y * cos(relative_theta);
+    this->player_index = (int) (relative_theta / msgs->angle_increment);
 }
 
 void Follow::view_ydlidar(const std::vector<cv::Point> &points)

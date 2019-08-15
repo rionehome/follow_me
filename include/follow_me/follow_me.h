@@ -83,7 +83,7 @@ public:
 
     void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
 
-    void updatePlayerPoint();
+    void updatePlayerPoint(const sensor_msgs::LaserScan_<std::allocator<void>>::ConstPtr &msgs);
 
     double toQuaternion_degree(double w, double z)
     {
