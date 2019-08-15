@@ -49,6 +49,11 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
     }
     else {
         //更新
+        /*
+         * 回転で生じた誤差を修正
+         */
+
+
         for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
             data_list[i].point = ydlidar_points[i];
             data_list[i].existence_rate = cost(player_point, ydlidar_points[i]) + data_list[i].existence_rate *
@@ -72,6 +77,8 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
         data_list[i].existence_rate *= 1 / total;
     }
 
+    this->view_ydlidar(ydlidar_points);
+
     //制御
     //シグナルがtrueの時のみ実行
     if (status) {
@@ -83,7 +90,6 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
         output.range = ydlidar_ranges[player_index];
         output_pub.publish(output);
         */
-
         move::Velocity velocity;
         velocity.linear_rate = calcStraight(player_point);
         velocity.angular_rate = calcAngle(player_point);
@@ -93,7 +99,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
 
 void Follow::odom_callback(const nav_msgs::Odometry::ConstPtr &odom)
 {
-
+    this->sensor_degree = this->toQuaternion_degree(odom->pose.pose.orientation.w, odom->pose.pose.orientation.z);
 }
 
 double Follow::calc_normal_distribution(int target_index, int center_index, int index_size)
@@ -124,7 +130,8 @@ double Follow::calcStraight(const cv::Point &target_point)
         result = -target_point.y * 0.008;
     }
     else if (abs(target_point.y) < 80) {
-        result = (100 - abs(target_point.y)) * -0.004;
+        //result = (100 - abs(target_point.y)) * -0.004;
+        result = 0;
     }
     else {
         result = 0;
@@ -133,6 +140,11 @@ double Follow::calcStraight(const cv::Point &target_point)
     result = result / 0.7;
     std::cout << result << '\n';
     return result;
+}
+
+void Follow::updatePlayerPoint()
+{
+    //(this->sensor_degree-this->last_degree)
 }
 
 void Follow::view_ydlidar(const std::vector<cv::Point> &points)
