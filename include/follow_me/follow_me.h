@@ -12,7 +12,6 @@
 #include <math.h>
 #include <iostream>
 #include <cmath>
-#include <follow_me/Output.h>
 #include "move/Velocity.h"
 #include <nav_msgs/Odometry.h>
 
@@ -34,7 +33,6 @@ public:
     } SampleData;
 
     ros::Publisher velocity_pub;
-    //ros::Publisher output_pub;
     ros::Subscriber ydlidar_sub;
     ros::Subscriber signal_sub;
     ros::Subscriber odom_sub;
@@ -44,6 +42,8 @@ public:
     std::vector<SampleData> data_list;
 
     int player_index = -1;
+    double sensor_degree = 0;
+    double last_degree = 0;
     bool status = false;
     bool move_follow_flag = false;
     cv::Point player_point;
@@ -68,8 +68,13 @@ public:
         std::cout << msgs->data << '\n';
         status = msgs->data == "start";
         if (!status) {
+            move::Velocity velocity;
+            velocity.linear_rate = 0;
+            velocity.angular_rate = 0;
+            velocity_pub.publish(velocity);
         }
         else {
+            printf("開始\n");
             data_list.clear();
         }
     }
@@ -78,7 +83,9 @@ public:
 
     void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
 
-    double toQuaternion_ang(double w, double z)
+    void updatePlayerPoint(const sensor_msgs::LaserScan_<std::allocator<void>>::ConstPtr &msgs);
+
+    double toQuaternion_degree(double w, double z)
     {
         return std::abs((z > 0 ? 1 : 360) - this->toAngle(acos(w) * 2));
     }
