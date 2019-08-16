@@ -30,9 +30,11 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
         if (msgs->range_min + 0.05 < range && msgs->range_max > range) {
             position = cv::Point((int) (range * sin(rad) * 100), (int) (-range * cos(rad) * 100));
             ydlidar_points.push_back(position);
+            if (min_distance > range) min_distance = range;
         }
         else {
-            ydlidar_points.push_back(position);
+            //ydlidar_points.push_back(position);
+            printf("入れなくてもいい？\n");
         }
         ydlidar_ranges.push_back(range);
         rad += msgs->angle_increment;
@@ -90,7 +92,11 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
         move::Velocity velocity;
         velocity.linear_rate = calcStraight(player_point);
         velocity.angular_rate = calcAngle(player_point);
-        velocity_pub.publish(velocity);
+        if (min_distance > 0.08)
+            velocity_pub.publish(velocity);
+        else {
+            printf("近すぎます\n");
+        }
     }
 }
 

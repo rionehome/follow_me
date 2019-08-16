@@ -14,6 +14,7 @@
 #include <cmath>
 #include "move/Velocity.h"
 #include <nav_msgs/Odometry.h>
+#include <float.h>
 
 #ifndef SRC_FOLLOW_H_H
 #define SRC_FOLLOW_H_H
@@ -42,6 +43,7 @@ public:
     std::vector<SampleData> data_list;
 
     int player_index = -1;
+    double min_distance = DBL_MAX;
     double sensor_degree = 0;
     double last_degree = 0;
     bool status = false;
