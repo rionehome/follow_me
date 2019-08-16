@@ -18,6 +18,8 @@
 
 #ifndef SRC_FOLLOW_H_H
 #define SRC_FOLLOW_H_H
+#define MAX_LINEAR 0.7 // m/s
+#define MAX_ANGULAR 1.9 // rad
 
 class Follow
 {
@@ -37,6 +39,7 @@ public:
     ros::Subscriber ydlidar_sub;
     ros::Subscriber signal_sub;
     ros::Subscriber odom_sub;
+    ros::Publisher twist_pub;
 
     std_msgs::Float64MultiArray info;
     std::vector<double> ydlidar_ranges;
@@ -63,7 +66,7 @@ public:
 
     static double calcAngle(const cv::Point &target_point);
 
-    double calcStraight(const cv::Point &target_point);
+    static double calcStraight(const cv::Point &target_point);
 
     void signal_callback(const std_msgs::String::ConstPtr &msgs)
     {
@@ -105,6 +108,20 @@ public:
 
     static double sign(double A)
     { return A == 0 ? 0 : A / std::abs(A); }
+
+    void publishTwist(double liner_x, double angular_z)
+    {
+        geometry_msgs::Twist twist = geometry_msgs::Twist();
+        if (std::abs(liner_x) > MAX_LINEAR) liner_x = MAX_LINEAR * (std::signbit(liner_x) ? -1 : 1);
+        twist.linear.x = liner_x;
+        twist.linear.y = 0.0;
+        twist.linear.z = 0.0;
+        twist.angular.x = 0.0;
+        twist.angular.y = 0.0;
+        if (std::abs(angular_z) > MAX_ANGULAR) angular_z = MAX_ANGULAR * (std::signbit(angular_z) ? -1 : 1);
+        twist.angular.z = angular_z;
+        this->twist_pub.publish(twist);
+    }
 };
 
 #endif //SRC_FOLLOW_H_H

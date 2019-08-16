@@ -7,6 +7,7 @@ Follow::Follow(ros::NodeHandle *n)
     this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
     this->signal_sub = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
     this->velocity_pub = n->advertise<move::Velocity>("/move/velocity", 1000);
+    this->twist_pub = n->advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
     n->getParam("/follow_me/status", status);
 }
 
@@ -33,8 +34,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
             if (min_distance > range) min_distance = range;
         }
         else {
-            //ydlidar_points.push_back(position);
-            printf("入れなくてもいい？\n");
+            ydlidar_points.push_back(position);
         }
         ydlidar_ranges.push_back(range);
         rad += msgs->angle_increment;
@@ -92,11 +92,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
         move::Velocity velocity;
         velocity.linear_rate = calcStraight(player_point);
         velocity.angular_rate = calcAngle(player_point);
-        if (min_distance > 0.08)
-            velocity_pub.publish(velocity);
-        else {
-            printf("近すぎます\n");
-        }
+        velocity_pub.publish(velocity);
     }
 }
 
@@ -116,7 +112,7 @@ double Follow::calc_normal_distribution(int target_index, int center_index, int 
 
 double Follow::calcAngle(const cv::Point &target_point)
 {
-    double result = target_point.x * 0.008;
+    double result = target_point.x * 0.01;
     result = result / 1.9;
     printf("angular:%f\n", result);
     return result;
@@ -130,7 +126,7 @@ double Follow::calcStraight(const cv::Point &target_point)
      */
     double result;
     if (abs(target_point.y) > 100) {
-        result = -target_point.y * 0.008;
+        result = -target_point.y * 0.05;
     }
     else if (abs(target_point.y) < 80) {
         //result = (100 - abs(target_point.y)) * -0.004;
@@ -139,8 +135,8 @@ double Follow::calcStraight(const cv::Point &target_point)
     else {
         result = 0;
     }
-    if (result > 0.7) result = 0.7;
-    result = result / 0.7;
+    if (result > 0.5) result = 0.5;
+    result = result / 0.5;
     std::cout << result << '\n';
     return result;
 }
