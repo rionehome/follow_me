@@ -7,7 +7,6 @@
 
 ## Usage
 ```
-roslaunch turtlebot_bringup minimal.launch  
 roslaunch follow_me follow.launch  
 ```
 
@@ -23,4 +22,4 @@ roslaunch follow_me follow.launch
 
 ### Publish Topic
 
-* **`/move/velocity`** 制御パラメータ送信 ( std_msgs/Float64MultiArray )
+* **`/move/velocity`** 制御パラメータ送信 ( move/velocity )
