@@ -135,8 +135,8 @@ double Follow::calcStraight(const cv::Point &target_point)
     else {
         result = 0;
     }
-    if (result > 0.5) result = 0.5;
-    result = result / 0.5;
+    if (result > 0.7) result = 0.7;
+    result = result / 0.7;
     std::cout << result << '\n';
     return result;
 }
