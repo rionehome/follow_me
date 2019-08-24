@@ -1,13 +1,14 @@
-# follow_me
+# Follow_me on ROS2
+
 ## Overview
-自己位置推定のアルゴリズムを利用した、精度の高いfollow meのプログラムです。
+自己位置推定(カルマンフィルタ)のアルゴリズムを利用した,精度の高いfollow meのプログラムです.
 
 ## setup
-`https://github.com/rionehome/move`からmoveパッケージをclone&buildしてください。
+`https://github.com/rionehome/move`からmoveパッケージをclone&buildしてください.
 
 ## Usage
 ```
-roslaunch follow_me follow.launch  
+ros2 launch follow_me follow.launch.py
 ```
 
 ## Node
