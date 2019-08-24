@@ -4,23 +4,17 @@
 自己位置推定(カルマンフィルタ)のアルゴリズムを利用した,精度の高いfollow meのプログラムです.
 
 ## setup
-`https://github.com/rionehome/move`からmoveパッケージをclone&buildしてください.
+調整中
 
 ## Usage
-```
-ros2 launch follow_me follow.launch.py
-```
+調整中
 
 ## Node
-**`name` Follow**
+調整中
 
 ### Subscribe Topic
-
-* **`/scan`** ydlidarの情報受け取り（ sensor_msgs/LaserScan ）
-
-* **`/follow_me/control`** follow me 開始・終了のシグナル受け取り ( std_msgs/String )
+調整中
 
 
 ### Publish Topic
-
-* **`/move/velocity`** 制御パラメータ送信 ( move/velocity )
+調整中
