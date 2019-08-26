@@ -12,7 +12,7 @@ find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 
-include_directories(include ./include)
+include_directories(include ./include /usr/include/eigen3)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ./lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin)
