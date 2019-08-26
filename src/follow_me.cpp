@@ -1,4 +1,5 @@
-#include "../include/follow_me/follow_me.h"
+#include "../include/follow_me/follow_me.hpp"
+#include "../include/ExtendedKalmanFilter/ExtendedKalmanFilter.hpp"
 
 Follow::Follow(ros::NodeHandle *n)
 {
