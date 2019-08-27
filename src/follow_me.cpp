@@ -6,7 +6,7 @@ Follow::Follow(ros::NodeHandle *n)
     this->ydlidar_sub = n->subscribe("/scan", 1, &Follow::ydlidar_callback, this);
     this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
     this->signal_sub = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
-    this->velocity_pub = n->advertise<move::Velocity>("/move/velocity", 1000);
+    this->velocity_pub = n->advertise<rione_msgs::Velocity>("/move/velocity", 1000);
     this->twist_pub = n->advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
     n->getParam("/follow_me/status", status);
 }
@@ -89,7 +89,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
         output.range = ydlidar_ranges[player_index];
         output_pub.publish(output);
         */
-        move::Velocity velocity;
+        rione_msgs::Velocity velocity;
         velocity.linear_rate = calcStraight(player_point);
         velocity.angular_rate = calcAngle(player_point);
         velocity_pub.publish(velocity);
@@ -98,7 +98,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
 
 void Follow::odom_callback(const nav_msgs::Odometry::ConstPtr &odom)
 {
-    this->sensor_degree = this->toQuaternion_degree(odom->pose.pose.orientation.w, odom->pose.pose.orientation.z);
+    this->sensor_degree = Follow::toQuaternion_degree(odom->pose.pose.orientation.w, odom->pose.pose.orientation.z);
 }
 
 double Follow::calc_normal_distribution(int target_index, int center_index, int index_size)
