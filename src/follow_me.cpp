@@ -1,80 +1,47 @@
 #include "../include/follow_me/follow_me.hpp"
 #include "../include/ExtendedKalmanFilter/ExtendedKalmanFilter.hpp"
 
-Follow::Follow(ros::NodeHandle *n)
-{
-    printf("Start class of 'Follow'\n");
-    this->ydlidar_sub = n->subscribe("/scan", 1, &Follow::ydlidar_callback, this);
-    this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
-    this->signal_sub = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
-    this->velocity_pub = n->advertise<move::Velocity>("/move/velocity", 1000);
-    this->twist_pub = n->advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
-    n->getParam("/follow_me/status", status);
-}
+using namespace std;
 
-Follow::~Follow()
-{
-    printf("Shutdown class of 'Follow'\n");
-}
-
-void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
-{
+void Follow_me::Ydlidar_Callback(sensor_msgs::msg::LaserScan::SharedPtr msg) {
     /*
      * ydlidarからの情報を取得
      */
-    std::vector<cv::Point> ydlidar_points;
-    double rad = msgs->angle_min;
+    rad = msg->angle_min;
+    angle_increment = msg->angle_increment;
     ydlidar_points.clear();
     ydlidar_ranges.clear();
 
-    for (const auto &range : msgs->ranges) {
+    for (auto range : msg->ranges) {
         cv::Point position;
-        if (msgs->range_min + 0.05 < range && msgs->range_max > range) {
+        if (msg->range_min + 0.05 < range && msg->range_max > range) {
             position = cv::Point((int) (range * sin(rad) * 100), (int) (-range * cos(rad) * 100));
             ydlidar_points.push_back(position);
-            if (min_distance > range) min_distance = range;
-        }
-        else {
+            if (min_distance > range) {
+                min_distance = range;
+            }
+        } else {
             ydlidar_points.push_back(position);
         }
         ydlidar_ranges.push_back(range);
-        rad += msgs->angle_increment;
+        rad += msg->angle_increment;
     }
 
-    if (data_list.empty()) {
+    if (player_point.x == 0 && player_point.y == 0) {
         //初期化
-        for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
-            //正規分布に従って初期化
-            SampleData d = {i, ydlidar_points[i], calc_normal_distribution(i, 360, (int) ydlidar_points.size()) *
-                cost(cv::Point(0, 0), ydlidar_points[i])
-            };
-            data_list.push_back(d);
+        for (i = 0; i < (int) ydlidar_points.size(); ++i) {
+            distance = sqrt(pow(ydlidar_points[i].x - player_point.x, 2) + pow(ydlidar_points[i].y - player_point.y, 2));
+            if (distance < min_distance) {
+                min_distance = distance;
+                min_index = i;
+            }
         }
-    }
-    else {
+        player_point.x = ydlidar_points[min_index].x;
+        player_point.y = ydlidar_points[min_index].y;
+        cout << player_point << endl;
+    } else {
         //更新
-        this->updatePlayerPoint(msgs);
-        for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
-            data_list[i].point = ydlidar_points[i];
-            data_list[i].existence_rate = cost(player_point, ydlidar_points[i]) + data_list[i].existence_rate *
-                calc_normal_distribution(i, player_index, (int) ydlidar_points.size());
-        }
-    }
-    //正規化
-    double total = 0.0;
-    double max = 0.0;
-    int max_index = 0;
-
-    for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
-        if (data_list[i].existence_rate == 0) data_list[i].existence_rate = 0.001;
-        total += data_list[i].existence_rate;
-        if (max < data_list[i].existence_rate) {
-            max = data_list[i].existence_rate;
-            max_index = i;
-        }
-    }
-    for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
-        data_list[i].existence_rate *= 1 / total;
+        this->updatePlayerPoint();
     }
 
     this->view_ydlidar(ydlidar_points);
@@ -82,36 +49,53 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs)
     //制御
     //シグナルがtrueの時のみ実行
     if (status) {
-        player_index = max_index;
-        player_point = cv::Point(ydlidar_points[player_index]);
+        player_point = cv::Point(player_point);
+        cout << player_point.x << " : " << player_point.y << endl;
         /*
         follow_me::Output output = follow_me::Output();
         output.index = player_index;
         output.range = ydlidar_ranges[player_index];
         output_pub.publish(output);
         */
-        move::Velocity velocity;
-        velocity.linear_rate = calcStraight(player_point);
-        velocity.angular_rate = calcAngle(player_point);
-        velocity_pub.publish(velocity);
+        //move::Velocity velocity;
+        //velocity.linear_rate = calcStraight(player_point);
+        //velocity.angular_rate = calcAngle(player_point);
+        //velocity_pub.publish(velocity);
     }
 }
 
-void Follow::odom_callback(const nav_msgs::Odometry::ConstPtr &odom)
-{
-    this->sensor_degree = this->toQuaternion_degree(odom->pose.pose.orientation.w, odom->pose.pose.orientation.z);
+
+void Follow_me::Odometry_Callback(nav_msgs::msg::Odometry::SharedPtr msg) {
+    this->sensor_degree = this->toQuaternion_degree(msg->pose.pose.orientation.w, msg->pose.pose.orientation.z);
 }
 
-double Follow::calc_normal_distribution(int target_index, int center_index, int index_size)
-{
-    double index_distance = abs(target_index - center_index);
-    if (index_distance > index_size / 2.0) index_distance -= index_size;
-    index_distance *= 1 / 95.0;
-    double normal_distribution = (1 / sqrt(2.0 * M_PI)) * exp((-index_distance * index_distance) / 2.0);
-    return normal_distribution;
+
+void Follow_me::Signal_Callback(std_msgs::msg::String::SharedPtr msg) {
+    std::cout << msg->data << '\n';
+    status = msg->data == "start";
+    if (!status) {
+        //move::Velocity velocity;
+        //velocity.linear_rate = 0;
+        //velocity.angular_rate = 0;
+        //velocity_pub.publish(velocity);
+    } else {
+        printf("開始\n");
+    }
 }
 
-double Follow::calcAngle(const cv::Point &target_point)
+double Follow_me::toQuaternion_degree(double w, double z) {
+    return std::abs((z > 0 ? 1 : 360) - toAngle(acos(w) * 2));
+}
+
+double Follow_me::toAngle(double rad) {
+    return rad * 180 / M_PI;
+}
+
+double Follow_me::toRadian(double angle) { 
+    return (angle * M_PI) / 180;
+}
+
+double Follow_me::calcAngle(const cv::Point &target_point)
 {
     double result = target_point.x * 0.01;
     result = result / 1.9;
@@ -119,7 +103,7 @@ double Follow::calcAngle(const cv::Point &target_point)
     return result;
 }
 
-double Follow::calcStraight(const cv::Point &target_point)
+double Follow_me::calcStraight(const cv::Point &target_point)
 {
     /*
      * playerのy座標より進行方向の速度を計算
@@ -142,20 +126,18 @@ double Follow::calcStraight(const cv::Point &target_point)
     return result;
 }
 
-void Follow::updatePlayerPoint(const sensor_msgs::LaserScan::ConstPtr &msgs)
-{
+void Follow_me::updatePlayerPoint() {
     double relative_theta = this->toRadian(this->last_degree - this->sensor_degree);
     double relative_x = this->player_point.x;
     double relative_y = this->player_point.y;
 
     //this->player_point.x = relative_x * cos(relative_theta) - relative_y * sin(relative_theta);
     //this->player_point.y = relative_x * sin(relative_theta) + relative_y * cos(relative_theta);
-    this->player_index = (int) (relative_theta / msgs->angle_increment);
 }
 
-void Follow::view_ydlidar(const std::vector<cv::Point> &points)
+void Follow_me::view_ydlidar(const std::vector<cv::Point> &points)
 {
-    cv::Mat img = cv::Mat::zeros(2000, 2000, CV_8UC3);
+    cv::Mat img = cv::Mat::zeros(1000, 1000, CV_8UC3);
     cv::Scalar color(0, 255, 0);
     for (auto &point : points) {
         int x = point.x + 1000;
@@ -168,11 +150,13 @@ void Follow::view_ydlidar(const std::vector<cv::Point> &points)
     cv::waitKey(1);
 }
 
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "follow_me");
-    ros::NodeHandle n;
-    Follow follow(&n);
-    ros::spin();
+int main(int argc, char *argv[]) {
+    rclcpp::init(argc, argv);
+
+    auto node = make_shared<Follow_me>();
+
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+
     return 0;
 }
