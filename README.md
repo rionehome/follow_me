@@ -3,12 +3,18 @@
 自己位置推定のアルゴリズムを利用した、精度の高いfollow meのプログラムです。
 
 ## setup
-`https://github.com/rionehome/move`からmoveパッケージをclone&buildしてください。
+```
+https://github.com/rionehome/follow_me
+https://github.com/rionehome/move
+https://github.com/EAIBOT/ydlidar
+https://github.com/rionehome/rione_msgs
+https://github.com/rionehome/emergency_stop
+```
+これらのパッケージをcloneした上でインストール・ビルドを行ってください。
 
 ## Usage
 ```
-roslaunch turtlebot_bringup minimal.launch  
-roslaunch follow_me follow.launch  
+roslaunch follow_me follow.launch
 ```
 
 ## Node
