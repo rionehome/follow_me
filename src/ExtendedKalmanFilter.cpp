@@ -1,11 +1,5 @@
 #include "../include/ExtendedKalmanFilter/ExtendedKalmanFilter.hpp"
 
-#include <cmath>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <Eigen/Dense>
-#include <Eigen/LU>
-
 using namespace std;
 using namespace Eigen;
 
@@ -76,10 +70,10 @@ Matrix<double, 3, 1> ExtendedKalmanFilter::state_estimate(Matrix<double, 2, 1> y
 
 
 Matrix<double, 3, 3> ExtendedKalmanFilter::posteriori_error_covariance_matrix(Matrix<double, 3, 2> kalman_gain, Matrix<double, 3, 3> _P){
-    return (MatrixXd::Identity(3, 3) - kalman_gain*C)*P;
+    return (MatrixXd::Identity(3, 3) - kalman_gain*C)*_P;
 }
 
-Matrix<double, 2, 1> ExtendedKalmanFilter::kalman_filter(double _x, double _y, double _v){
+tuple<double, double> ExtendedKalmanFilter::kalman_filter(double _x, double _y, double _v){
     Matrix<double, 3, 1> value_of_prior_state_estimate = prior_state_estimate();
     jacobian_matrix(_v, value_of_prior_state_estimate(2));
     Matrix<double, 3, 3> value_of_prior_error_covariance_matrix = prior_error_covariance_matrix();
@@ -90,13 +84,9 @@ Matrix<double, 2, 1> ExtendedKalmanFilter::kalman_filter(double _x, double _y, d
 
     Matrix<double, 3, 1> value_state_estimate = state_estimate(observation_matrix, value_of_prior_state_estimate, kalman_gain_matrix);
     Matrix<double, 3, 3> value_posteriori_error_covariance_matrix = posteriori_error_covariance_matrix(kalman_gain_matrix, value_of_prior_error_covariance_matrix);
-    double est_x = value_state_estimate(0, 0);
-    double est_y = value_state_estimate(1, 0);
 
     x = value_state_estimate;
     P = value_posteriori_error_covariance_matrix;
 
-    Matrix<double, 2, 1> est;
-    est << est_x, est_y;
-    return est;
+    return make_tuple(value_state_estimate(0, 0), value_state_estimate(1, 0));
 }
