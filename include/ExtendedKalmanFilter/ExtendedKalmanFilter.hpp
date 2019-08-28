@@ -1,14 +1,12 @@
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_VECTORIZE
-#define EIGEN_DONT_PARALLELIZE
-#define EIGEN_MPL2_ONLY
-
 #include <cmath>
+#include <tuple>
 
+#include <Eigen/LU>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
 
+using namespace std;
 using namespace Eigen;
 
 class ExtendedKalmanFilter {
@@ -25,7 +23,7 @@ class ExtendedKalmanFilter {
         void jacobian_matrix(double v, double theta);
         Matrix<double, 3, 1> state_estimate(Matrix<double, 2, 1> y, Matrix<double, 3, 1> x, Matrix<double, 3, 2> kalman_gain);
         Matrix<double, 3, 3> posteriori_error_covariance_matrix(Matrix<double, 3, 2> kalman_gain, Matrix<double, 3, 3> _P);
-        Matrix<double, 2, 1> kalman_filter(double _x, double _y, double _v);
+        tuple<double, double> kalman_filter(double _x, double _y, double _v);
 
         double dt;
         Matrix<double, 3, 3> A;
