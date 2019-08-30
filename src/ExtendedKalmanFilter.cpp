@@ -1,58 +1,92 @@
 #include "../include/ExtendedKalmanFilter/ExtendedKalmanFilter.hpp"
 
-#include <cmath>
-
 using namespace std;
+using namespace Eigen;
 
 ExtendedKalmanFilter::ExtendedKalmanFilter(double init_x, double init_y, double init_theta, double dt){
-	dt = dt;
+    dt = dt;
 
-	vector<double> x{init_x, init_y, init_theta};
+    x << init_x,
+         init_y,
+         init_theta;
 
-	vector<double> u{dt*cos(init_theta), dt*sin(init_theta), dt};
+    u << dt*cos(init_theta),
+         dt*sin(init_theta),
+         dt;
 
-	vector<vector<double>> A{{1, 0, 0},
-		                     {0, 1, 0},
-				             {0, 0, 1}};
+    A << 1.0, 0.0, 0.0,
+         0.0, 1.0, 0.0,
+         0.0, 0.0, 1.0;
 
-	vector<vector<double>> B{{0.5, 0, 0},
-		                     {0, 0.5, 0},
-					         {0, 0, 0.5}};
+    B << 0.5, 0.0, 0.0,
+         0.0, 0.5, 0.0,
+         0.0, 0.0, 0.5;
 
-	vector<vector<double>> C{{1, 0, 0},
-		                     {0, 1, 0}};
+    C << 1.0, 0.0, 0.0,
+         0.0, 1.0, 0.0;
 
-	vector<vector<double>> P{{0.5, 0, 0},
-		                     {0, 0.5, 0},
-					         {0, 0, 0.5}};
+    P << 0.5, 0.0, 0.0,
+         0.0, 0.5, 0.0,
+         0.0, 0.0, 0.5;
 
-	vector<vector<double>> Q{{10, 0, 0},
-		                     {0, 10, 0},
-					         {0, 0, 10}};
+    Q << 10.0, 0.0, 0.0,
+         0.0, 10.0, 0.0,
+         0.0, 0.0, 10.0;
 
-	vector<vector<double>> R{{3, 0},
-	    	                 {0, 3}};
+    R << 3.0, 0.0,
+         0.0, 3.0;
 }
 
-ExtendedKalmanFilter::~ExtendedKalmanFilter(){}
 
-vector<double> ExtendedKalmanFilter::prior_state_estimate(){
+ExtendedKalmanFilter::~ExtendedKalmanFilter(){
 }
 
-vector<double> ExtendedKalmanFilter::prior_error_convariance_matrix(){
+
+Matrix<double, 3, 1> ExtendedKalmanFilter::prior_state_estimate(){
+    return A*x + B*u;
 }
 
-vector<double> ExtendedKalmanFilter::kalman_gain(vector<double> _P){
+
+Matrix<double, 3, 3> ExtendedKalmanFilter::prior_error_covariance_matrix(){
+    return A*P*A.transpose() + Q;
 }
+
+
+Matrix<double, 3, 2> ExtendedKalmanFilter::kalman_gain(Matrix<double, 3, 3> _P){
+    return _P*C.transpose()*((C*_P*C.transpose())+R).inverse();
+}
+
 
 void ExtendedKalmanFilter::jacobian_matrix(double v, double theta){
+    A << 1.0, 0.0, v*dt*sin(theta),
+         0.0, 1.0, -v*dt*cos(theta),
+         0.0, 0.0, 1.0;
 }
 
-vector<double> ExtendedKalmanFilter::state_estimate(vector<double> y, vector<double> x, vector<double> kalman_gain){
+
+Matrix<double, 3, 1> ExtendedKalmanFilter::state_estimate(Matrix<double, 2, 1> y, Matrix<double, 3, 1> x, Matrix<double, 3, 2> kalman_gain){
+    return x + kalman_gain*(y - C*x);
 }
 
-vector<double> ExtendedKalmanFilter::posteriori_error_convariance_matrix(vector<double> kalman_gain, vector<double> _P){
+
+Matrix<double, 3, 3> ExtendedKalmanFilter::posteriori_error_covariance_matrix(Matrix<double, 3, 2> kalman_gain, Matrix<double, 3, 3> _P){
+    return (MatrixXd::Identity(3, 3) - kalman_gain*C)*_P;
 }
 
-vector<double> ExtendedKalmanFilter::kalman_filter(double x, double y, double v){
+tuple<double, double> ExtendedKalmanFilter::kalman_filter(double _x, double _y, double _v){
+    Matrix<double, 3, 1> value_of_prior_state_estimate = prior_state_estimate();
+    jacobian_matrix(_v, value_of_prior_state_estimate(2));
+    Matrix<double, 3, 3> value_of_prior_error_covariance_matrix = prior_error_covariance_matrix();
+    Matrix<double, 3, 2> kalman_gain_matrix = kalman_gain(value_of_prior_error_covariance_matrix);
+
+    Matrix<double, 2, 1> observation_matrix;
+    observation_matrix << _x, _y;
+
+    Matrix<double, 3, 1> value_state_estimate = state_estimate(observation_matrix, value_of_prior_state_estimate, kalman_gain_matrix);
+    Matrix<double, 3, 3> value_posteriori_error_covariance_matrix = posteriori_error_covariance_matrix(kalman_gain_matrix, value_of_prior_error_covariance_matrix);
+
+    x = value_state_estimate;
+    P = value_posteriori_error_covariance_matrix;
+
+    return make_tuple(value_state_estimate(0, 0), value_state_estimate(1, 0));
 }
