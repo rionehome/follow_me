@@ -15,8 +15,6 @@ class ExtendedKalmanFilter {
         ExtendedKalmanFilter(double init_x, double init_y, double init_theta, double dt);
         ~ExtendedKalmanFilter();
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
         Matrix<double, 3, 1> prior_state_estimate();
         Matrix<double, 3, 3> prior_error_covariance_matrix();
         Matrix<double, 3, 2> kalman_gain(Matrix<double, 3, 3> _P);
@@ -24,6 +22,8 @@ class ExtendedKalmanFilter {
         Matrix<double, 3, 1> state_estimate(Matrix<double, 2, 1> y, Matrix<double, 3, 1> x, Matrix<double, 3, 2> kalman_gain);
         Matrix<double, 3, 3> posteriori_error_covariance_matrix(Matrix<double, 3, 2> kalman_gain, Matrix<double, 3, 3> _P);
         tuple<double, double> kalman_filter(double _x, double _y, double _v);
+
+    private :
 
         double dt;
         Matrix<double, 3, 3> A;
