@@ -63,7 +63,7 @@ public:
 
     static double calcAngle(const cv::Point &target_point);
 
-    static double calcStraight(const cv::Point &target_point);
+    double calcStraight(const cv::Point &target_point);
 
     void signal_callback(const std_msgs::String::ConstPtr &msgs) {
         std::cout << msgs->data << '\n';
@@ -83,21 +83,15 @@ public:
 
     void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
 
-    void updatePlayerPoint(const sensor_msgs::LaserScan_<std::allocator<void>>::ConstPtr &msgs);
-
     static double toQuaternion_degree(double w, double z) {
         return std::abs((z > 0 ? 1 : 360) - Follow::toAngle(acos(w) * 2));
-    }
-
-    static double toQuaternion_rad(double w, double z) {
-        return acos(w) * (z > 0 ? 1 : -1) * 2;
     }
 
     static double toAngle(double rad) { return rad * 180 / M_PI; }
 
     static double toRadian(double angle) { return (angle * M_PI) / 180; }
 
-    static double sign(double A) { return A == 0 ? 0 : A / std::abs(A); }
+    void updatePlayerPoint(double angle_increment, std::vector<cv::Point> ydlidar_points);
 };
 
 #endif //SRC_FOLLOW_H_H
