@@ -44,7 +44,7 @@ void Follow_me::Ydlidar_Callback(sensor_msgs::msg::LaserScan::SharedPtr msg) {
             }
         }
         player_point = cv::Point(ydlidar_points[min_index]);
-        ekf = new ExtendedKalmanFilter(player_point.x, player_point.y, 0.0, 0.02);
+        ekf = new ExtendedKalmanFilter(player_point.x, player_point.y, 0.02);
     } else {
         min_distance = DBL_MAX;
         for (i = 0; i < (int) ydlidar_points.size(); ++i) {
@@ -57,11 +57,10 @@ void Follow_me::Ydlidar_Callback(sensor_msgs::msg::LaserScan::SharedPtr msg) {
 
         tuple<double, double> point;
 
-        if (min_distance > 50) {
-            point = ekf->kalman_filter(player_point.x, player_point.y, 1);
-        } else {
-            point = ekf->kalman_filter(ydlidar_points[min_index].x, ydlidar_points[min_index].y, min_distance);
-        }
+        double dx = ydlidar_points[i].x - player_point.x;
+        double dy = ydlidar_points[i].y - player_point.y;
+
+        point = ekf->kalman_filter(ydlidar_points[min_index].x, ydlidar_points[min_index].y, dx, dy);
 
         player_point = cv::Point(get<0>(point), get<1>(point));
     }
@@ -72,8 +71,19 @@ void Follow_me::Ydlidar_Callback(sensor_msgs::msg::LaserScan::SharedPtr msg) {
     //シグナルがtrueの時のみ実行
     if (true) {
         geometry_msgs::msg::Twist twist;
-        twist.linear.x = calcStraight(player_point)/4;
-        twist.angular.z = toAngle(calcAngle(player_point));
+        twist.linear.x = calcStraight(player_point)/2;
+
+        if (player_point.y > 0) {
+            if (player_point.x > 0) {
+                twist.angular.z = toAngle(sqrt(pow(player_point.x, 2) + pow(player_point.y, 2))*0.01);
+            } else {
+                twist.angular.z = toAngle(-sqrt(pow(player_point.x, 2) + pow(player_point.y, 2))*0.01);
+            }
+            
+        } else {
+            twist.angular.z = toAngle(calcAngle(player_point));
+        }
+
         Velocity_Publisher->publish(twist);
     }
 }
@@ -111,18 +121,16 @@ double Follow_me::toRadian(double angle) {
 
 double Follow_me::calcAngle(cv::Point target_point) {
     double result = target_point.x * 0.01;
-    cout << "Angular : " << result << endl;
     return result;
 }
 
 double Follow_me::calcStraight(const cv::Point &target_point) {
     double result;
     if (target_point.y + 50 < 0) {
-        result = (target_point.y + 50) * 0.01;
+        result = -(target_point.y + 50) * 0.01;
     } else {
         result = 0;
     }
-    cout << "Linear : " << result << endl;
     return result;
 }
 
