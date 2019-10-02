@@ -5,10 +5,6 @@
 //
 
 
-//#include "move/Velocity.h"
-//#ifndef SRC_FOLLOW_H_H
-//#define SRC_FOLLOW_H_H
-
 #include <iostream>
 #include <cmath>
 
@@ -67,12 +63,13 @@ class Follow_me : public rclcpp::Node {
         double min_distance = DBL_MAX;
         cv::Point player_point{0, 0};
 
-        rmw_qos_profile_t SENSOR_QOS_PROFILE = rmw_qos_profile_sensor_data;
+        rmw_qos_profile_t SENSOR_QOS_PROFILE = rmw_qos_profile_default;
         rmw_qos_profile_t PARAMETER_QOS_PROFILE = rmw_qos_profile_parameters;
 
     public : Follow_me() :
         Node("follow_me"){
             RCLCPP_INFO(this->get_logger(), "START FOLLOW ME");
+
             Ydlidar_Subscription = this->create_subscription<sensor_msgs::msg::LaserScan>(
                 "scan",
                 [this](sensor_msgs::msg::LaserScan::SharedPtr msg){
@@ -86,7 +83,7 @@ class Follow_me : public rclcpp::Node {
                 [this](std_msgs::msg::String::SharedPtr msg){
                     Signal_Callback(msg);
                 },
-                PARAMETER_QOS_PROFILE
+                SENSOR_QOS_PROFILE
             );
 
             Odometry_Subscription = this->create_subscription<nav_msgs::msg::Odometry>(
