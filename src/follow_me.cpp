@@ -72,8 +72,6 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
         data_list[i].existence_rate *= 1 / total;
     }
 
-    this->view_ydlidar(ydlidar_points);
-
     //制御
     //シグナルがtrueの時のみ実行
     if (status) {
@@ -84,6 +82,10 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
         velocity.angular_rate = calcAngle(player_point);
         velocity_pub.publish(velocity);
     }
+
+    this->view_ydlidar(ydlidar_points);
+    std::cout << player_point << '\n';
+
 }
 
 void Follow::odom_callback(const nav_msgs::Odometry::ConstPtr &odom) {
@@ -111,7 +113,8 @@ double Follow::calcStraight(const cv::Point &target_point) {
      * ただし、move_follow_flagによってしきい値を変更する
      */
     double result;
-    if (std::abs((this ->last_degree - this->sensor_degree)) > 40) return 0;
+    if (std::abs((this->last_degree - this->sensor_degree)) > 40) return 0;
+    if (target_point.y > 0) return 0;
     if (abs(target_point.y) > 100) {
         result = -target_point.y * 0.05;
     } else if (abs(target_point.y) < 80) {
@@ -139,15 +142,15 @@ void Follow::updatePlayerPoint(double angle_increment, std::vector<cv::Point> yd
 }
 
 void Follow::view_ydlidar(const std::vector<cv::Point> &points) {
-    cv::Mat img = cv::Mat::zeros(2000, 2000, CV_8UC3);
+    cv::Mat img = cv::Mat::zeros(1000, 1000, CV_8UC3);
     cv::Scalar color(0, 255, 0);
     for (auto &point : points) {
-        int x = point.x + 1000;
-        int y = point.y + 1000;
+        int x = point.x + 500;
+        int y = point.y + 500;
         cv::circle(img, cv::Point(x, y), 1, color, 1);
     }
-    cv::circle(img, cv::Point(player_point.x + 1000, player_point.y + 1000), 5, cv::Scalar(0, 0, 255), 1);
-    cv::namedWindow("window", CV_WINDOW_NORMAL);
+    cv::circle(img, cv::Point(player_point.x + 500, player_point.y + 500), 5, cv::Scalar(0, 0, 255), 1);
+    //cv::namedWindow("window", CV_WINDOW_NORMAL);
     cv::imshow("window", img);
     cv::waitKey(1);
 }
