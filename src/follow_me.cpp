@@ -26,7 +26,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
     for (const auto &range : msgs->ranges) {
         cv::Point2d position;
         if (msgs->range_min + 0.05 < range && msgs->range_max > range) {
-            position = cv::Point2d((int) (range * sin(rad) * 100), (int) (-range * cos(rad) * 100));
+            position = cv::Point2d(range * sin(rad) * 100, -range * cos(rad) * 100);
             ydlidar_points.push_back(position);
             if (min_distance > range) min_distance = range;
         } else {
@@ -82,6 +82,14 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
         velocity.angular_rate = calcAngle(player_point);
         velocity_pub.publish(velocity);
     }
+    printf("real position");
+    cv::Point2d new_position = this->transform_absolute_to_relative(player_point);
+    double tmp_x = new_position.x - last_absolute_position.x;
+    double tmp_y = new_position.y - last_absolute_position.y;
+
+    std::cout << sqrt(tmp_x * tmp_x + tmp_y * tmp_y) << '\n';
+    this->last_absolute_position = new_position;
+    //std::cout <<  << '\n';
 
     this->view_ydlidar(ydlidar_points);
     std::cout << player_point << '\n';

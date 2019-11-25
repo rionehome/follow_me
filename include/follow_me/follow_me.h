@@ -51,6 +51,8 @@ public:
     double sensor_degree = 0;
     double sensor_rad = 0;
     double last_degree = 0;
+    cv::Point2d last_absolute_position;
+    std::vector<cv::Point2d> stack_absolute_position;
     bool status = false;
     cv::Point2d player_point;
 
@@ -86,8 +88,14 @@ public:
 
     void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
 
-    void transform_absolute_to_relative(cv::Point2d &relative_point) {
+    cv::Point2d transform_absolute_to_relative(cv::Point2d &relative_point) {
+        double relative_theta = this->sensor_rad;
+        double relative_x = relative_point.x;
+        double relative_y = relative_point.y;
 
+        double x = (relative_x * cos(relative_theta) - relative_y * sin(relative_theta)) + this->sensor_x;
+        double y = (relative_x * sin(relative_theta) + relative_y * cos(relative_theta)) + this->sensor_y;
+        return cv::Point2d(x, y);
     }
 
     static double toQuaternion_degree(double w, double z) {
