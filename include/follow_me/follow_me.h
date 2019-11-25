@@ -46,7 +46,10 @@ public:
 
     int player_index = -1;
     double min_distance = DBL_MAX;
+    double sensor_x = 0;
+    double sensor_y = 0;
     double sensor_degree = 0;
+    double sensor_rad = 0;
     double last_degree = 0;
     bool status = false;
     cv::Point player_point;
@@ -83,8 +86,16 @@ public:
 
     void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
 
+    void transform_absolute_to_relative(cv::Point &relative_point) {
+
+    }
+
     static double toQuaternion_degree(double w, double z) {
         return std::abs((z > 0 ? 1 : 360) - Follow::toAngle(acos(w) * 2));
+    }
+
+    static double toQuaternion_rad(double w, double z) {
+        return acos(w) * 2 * (signbit(z) ? -1 : 1);
     }
 
     static double toAngle(double rad) { return rad * 180 / M_PI; }

@@ -89,7 +89,10 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
 }
 
 void Follow::odom_callback(const nav_msgs::Odometry::ConstPtr &odom) {
+    this->sensor_x = odom->pose.pose.position.x;
+    this->sensor_y = odom->pose.pose.position.y;
     this->sensor_degree = Follow::toQuaternion_degree(odom->pose.pose.orientation.w, odom->pose.pose.orientation.z);
+    this->sensor_rad = Follow::toQuaternion_rad(odom->pose.pose.orientation.w, odom->pose.pose.orientation.z);
 }
 
 double Follow::calc_normal_distribution(int target_index, int center_index, int index_size) {
