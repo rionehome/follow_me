@@ -18,15 +18,15 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
     /*
      * ydlidarからの情報を取得
      */
-    std::vector<cv::Point> ydlidar_points;
+    std::vector<cv::Point2d> ydlidar_points;
     double rad = msgs->angle_min;
     ydlidar_points.clear();
     ydlidar_ranges.clear();
 
     for (const auto &range : msgs->ranges) {
-        cv::Point position;
+        cv::Point2d position;
         if (msgs->range_min + 0.05 < range && msgs->range_max > range) {
-            position = cv::Point((int) (range * sin(rad) * 100), (int) (-range * cos(rad) * 100));
+            position = cv::Point2d((int) (range * sin(rad) * 100), (int) (-range * cos(rad) * 100));
             ydlidar_points.push_back(position);
             if (min_distance > range) min_distance = range;
         } else {
@@ -41,7 +41,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
         for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
             //正規分布に従って初期化
             SampleData d = {i, ydlidar_points[i], calc_normal_distribution(i, 360, (int) ydlidar_points.size()) *
-                                                  cost(cv::Point(0, 0), ydlidar_points[i])
+                                                  cost(cv::Point2d(0, 0), ydlidar_points[i])
             };
             data_list.push_back(d);
         }
@@ -76,7 +76,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
     //シグナルがtrueの時のみ実行
     if (status) {
         player_index = max_index;
-        player_point = cv::Point(ydlidar_points[player_index]);
+        player_point = cv::Point2d(ydlidar_points[player_index]);
         rione_msgs::Velocity velocity;
         velocity.linear_rate = calcStraight(player_point);
         velocity.angular_rate = calcAngle(player_point);
@@ -103,14 +103,14 @@ double Follow::calc_normal_distribution(int target_index, int center_index, int 
     return normal_distribution;
 }
 
-double Follow::calcAngle(const cv::Point &target_point) {
+double Follow::calcAngle(const cv::Point2d &target_point) {
     double result = target_point.x * 0.008;
     result = result / 1.9;
     if (std::abs(result) > 1.0) result = 1.0;
     return result;
 }
 
-double Follow::calcStraight(const cv::Point &target_point) {
+double Follow::calcStraight(const cv::Point2d &target_point) {
     /*
      * playerのy座標より進行方向の速度を計算
      * ただし、move_follow_flagによってしきい値を変更する
@@ -131,7 +131,7 @@ double Follow::calcStraight(const cv::Point &target_point) {
     return result;
 }
 
-void Follow::updatePlayerPoint(double angle_increment, std::vector<cv::Point> ydlidar_points) {
+void Follow::updatePlayerPoint(double angle_increment, std::vector<cv::Point2d> ydlidar_points) {
     double relative_theta = Follow::toRadian(this->last_degree - this->sensor_degree);
     if (std::abs(relative_theta) > M_PI) {
         std::cout << "######################################################################" << '\n';
@@ -144,12 +144,12 @@ void Follow::updatePlayerPoint(double angle_increment, std::vector<cv::Point> yd
     this->last_degree = this->sensor_degree;
 }
 
-void Follow::view_ydlidar(const std::vector<cv::Point> &points) {
+void Follow::view_ydlidar(const std::vector<cv::Point2d> &points) {
     cv::Mat img = cv::Mat::zeros(1000, 1000, CV_8UC3);
     cv::Scalar color(0, 255, 0);
     for (auto &point : points) {
-        int x = point.x + 500;
-        int y = point.y + 500;
+        int x = (int) point.x + 500;
+        int y = (int) point.y + 500;
         cv::circle(img, cv::Point(x, y), 1, color, 1);
     }
     cv::circle(img, cv::Point(player_point.x + 500, player_point.y + 500), 5, cv::Scalar(0, 0, 255), 1);

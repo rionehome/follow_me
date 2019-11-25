@@ -30,7 +30,7 @@ public:
     //インデックスごとの構造体を作成
     typedef struct {
         int index;
-        cv::Point point;
+        cv::Point2d point;
         double existence_rate;
     } SampleData;
 
@@ -52,21 +52,21 @@ public:
     double sensor_rad = 0;
     double last_degree = 0;
     bool status = false;
-    cv::Point player_point;
+    cv::Point2d player_point;
 
     static double calc_normal_distribution(int target_index, int center_index, int index_size);
 
-    static double cost(const cv::Point &p1, const cv::Point &p2) {
+    static double cost(const cv::Point2d &p1, const cv::Point2d &p2) {
         double result = p2.x == 0 && p2.y == 0 ? 0.01 : 3 / hypot(p2.x - p1.x, p2.y - p1.y);
         if (std::isinf(result)) return 0.1;
         return result;
     }
 
-    void view_ydlidar(const std::vector<cv::Point> &points);
+    void view_ydlidar(const std::vector<cv::Point2d> &points);
 
-    static double calcAngle(const cv::Point &target_point);
+    static double calcAngle(const cv::Point2d &target_point);
 
-    double calcStraight(const cv::Point &target_point);
+    double calcStraight(const cv::Point2d &target_point);
 
     void signal_callback(const std_msgs::String::ConstPtr &msgs) {
         std::cout << msgs->data << '\n';
@@ -86,7 +86,7 @@ public:
 
     void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
 
-    void transform_absolute_to_relative(cv::Point &relative_point) {
+    void transform_absolute_to_relative(cv::Point2d &relative_point) {
 
     }
 
@@ -102,7 +102,7 @@ public:
 
     static double toRadian(double angle) { return (angle * M_PI) / 180; }
 
-    void updatePlayerPoint(double angle_increment, std::vector<cv::Point> ydlidar_points);
+    void updatePlayerPoint(double angle_increment, std::vector<cv::Point2d> ydlidar_points);
 };
 
 #endif //SRC_FOLLOW_H_H
