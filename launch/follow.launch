@@ -3,6 +3,9 @@
 
     <node pkg="emergency_stop" name="emergency_stop" output="screen" respawn="false" type="main.py"/>
 
+    <node pkg="sound_system" name="hotword_detector" output="screen" respawn="false" type="hotword_detector.py"/>
+
+    <node pkg="follow_me" name="follow_me_hot_word" output="screen" respawn="false" type="hotword.py"/>
 	<node pkg="follow_me" name="follow_me" respawn="true" output="screen" type="follow_me">
 	    <param name="status" value="true"/>
 	</node>
