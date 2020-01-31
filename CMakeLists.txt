@@ -5,11 +5,12 @@ project(follow_me)
 set(CMAKE_CXX_STANDARD 14)
 
 find_package(ament_cmake REQUIRED)
-find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(rione_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(OpenCV REQUIRED)
 
@@ -24,7 +25,7 @@ add_library(ExtendedKalmanFilter SHARED src/ExtendedKalmanFilter.cpp)
 ament_target_dependencies(ExtendedKalmanFilter)
 
 add_executable(follow_me src/follow_me.cpp src/ExtendedKalmanFilter.cpp)
-ament_target_dependencies(follow_me lib/ExtenendedKalmanFilter rclcpp std_msgs geometry_msgs nav_msgs sensor_msgs OpenCV)
+ament_target_dependencies(follow_me rclcpp std_msgs geometry_msgs nav_msgs sensor_msgs rione_msgs OpenCV)
 
 target_include_directories(follow_me PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
