@@ -65,23 +65,25 @@ void Follow_me::Ydlidar_Callback(sensor_msgs::msg::LaserScan::SharedPtr msg) {
         player_point = cv::Point(get<0>(point), get<1>(point));
     }
 
-    view_ydlidar(ydlidar_points);
+    if (view_laser) {
+        view_ydlidar(ydlidar_points);
+    };
 
     //制御
     //シグナルがtrueの時のみ実行
-    if (true) {
+    if (status) {
         geometry_msgs::msg::Twist twist;
         twist.linear.x = calcStraight(player_point)/2;
 
         if (player_point.y > 0) {
             if (player_point.x > 0) {
-                twist.angular.z = toAngle(sqrt(pow(player_point.x, 2) + pow(player_point.y, 2))*0.01);
+                twist.angular.z = sqrt(pow(player_point.x, 2) + pow(player_point.y, 2))*0.01;
             } else {
-                twist.angular.z = toAngle(-sqrt(pow(player_point.x, 2) + pow(player_point.y, 2))*0.01);
+                twist.angular.z = -sqrt(pow(player_point.x, 2) + pow(player_point.y, 2))*0.01;
             }
             
         } else {
-            twist.angular.z = toAngle(calcAngle(player_point));
+            twist.angular.z = calcAngle(player_point);
         }
 
         Velocity_Publisher->publish(twist);
@@ -94,16 +96,25 @@ void Follow_me::Odometry_Callback(nav_msgs::msg::Odometry::SharedPtr msg) {
 }
 
 
-void Follow_me::Signal_Callback(std_msgs::msg::String::SharedPtr msg) {
-    std::cout << msg->data << '\n';
-    status = msg->data == "start";
-    if (!status) {
-        //move::Velocity velocity;
-        //velocity.linear_rate = 0;
-        //velocity.angular_rate = 0;
-        //velocity_pub.publish(velocity);
-    } else {
+void Follow_me::Signal_Callback(rione_msgs::msg::Command::SharedPtr msg) {
+    if (msg->command == "START") { // if recieve START command
+        player_point.x = 0;
+        player_point.y = 0;
+
+        status = true;
+
         RCLCPP_INFO(this->get_logger(), "START");
+
+    } else if(msg->command == "STOP"){
+        status = false;
+        geometry_msgs::msg::Twist twist;
+        twist.linear.x = 0.0;
+        twist.angular.z = 0.0;
+        Velocity_Publisher->publish(twist);
+
+        RCLCPP_INFO(this->get_logger(), "STOP FOLLOW ME");
+    } else {
+        RCLCPP_INFO(this->get_logger(), "UNKNOWN MESSAGE");
     }
 }
 
@@ -143,7 +154,7 @@ void Follow_me::view_ydlidar(const std::vector<cv::Point> &points) {
         cv::circle(img, cv::Point(x, y), 1, color, 1);
     }
     cv::circle(img, cv::Point(player_point.x + 500, player_point.y + 250), 5, cv::Scalar(0, 0, 255), 1);
-    cv::namedWindow("window", CV_WINDOW_NORMAL);
+    cv::namedWindow("window", CV_RAND_NORMAL);
     cv::imshow("window", img);
     cv::waitKey(1);
 }
