@@ -4,17 +4,8 @@
 自己位置推定(カルマンフィルタ)のアルゴリズムを利用した,精度の高いfollow meのプログラムです.
 
 ## setup
-調整中
+1. git clone https://github.com/rionehome/follow_me/tree/ros2/master
+2. colcon build --packages-select follow_me
 
 ## Usage
-調整中
-
-## Node
-調整中
-
-### Subscribe Topic
-調整中
-
-
-### Publish Topic
-調整中
+ros2 run follow_me follow_me
