@@ -97,7 +97,7 @@ void Follow_me::Odometry_Callback(nav_msgs::msg::Odometry::SharedPtr msg) {
 
 
 void Follow_me::Signal_Callback(rione_msgs::msg::Command::SharedPtr msg) {
-    if (msg->command == "START") { // if recieve START command
+    if (msg->command.data == "START") { // if recieve START command
         player_point.x = 0;
         player_point.y = 0;
 
@@ -105,7 +105,7 @@ void Follow_me::Signal_Callback(rione_msgs::msg::Command::SharedPtr msg) {
 
         RCLCPP_INFO(this->get_logger(), "START");
 
-    } else if(msg->command == "STOP"){
+    } else if(msg->command.data == "STOP"){
         status = false;
         geometry_msgs::msg::Twist twist;
         twist.linear.x = 0.0;
