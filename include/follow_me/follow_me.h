@@ -1,37 +1,36 @@
 //
 // Created by migly on 19/07/13.
 //
-#include "ros/ros.h"
-#include "std_msgs/String.h"
-#include "sensor_msgs/Image.h"
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/highgui.hpp>
 #include <std_msgs/Float64MultiArray.h>
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <cmath>
-#include "move/Velocity.h"
+#include <rione_msgs/Velocity.h>
 #include <nav_msgs/Odometry.h>
-#include <float.h>
+#include <cfloat>
 
 #ifndef SRC_FOLLOW_H_H
 #define SRC_FOLLOW_H_H
 #define MAX_LINEAR 0.7 // m/s
 #define MAX_ANGULAR 1.9 // rad
 
-class Follow
-{
+class Follow {
 public:
     explicit Follow(ros::NodeHandle *n);
+
     ~Follow();
 
     //インデックスごとの構造体を作成
-    typedef struct
-    {
+    typedef struct {
         int index;
-        cv::Point point;
+        cv::Point2d point;
         double existence_rate;
     } SampleData;
 
@@ -47,38 +46,39 @@ public:
 
     int player_index = -1;
     double min_distance = DBL_MAX;
+    double sensor_x = 0;
+    double sensor_y = 0;
     double sensor_degree = 0;
+    double sensor_rad = 0;
     double last_degree = 0;
+    cv::Point2d last_absolute_position;
+    std::vector<cv::Point2d> stack_absolute_position;
     bool status = false;
-    bool move_follow_flag = false;
-    cv::Point player_point;
+    cv::Point2d player_point;
 
     static double calc_normal_distribution(int target_index, int center_index, int index_size);
 
-    static double cost(const cv::Point &p1, const cv::Point &p2)
-    {
+    static double cost(const cv::Point2d &p1, const cv::Point2d &p2) {
         double result = p2.x == 0 && p2.y == 0 ? 0.01 : 3 / hypot(p2.x - p1.x, p2.y - p1.y);
         if (std::isinf(result)) return 0.1;
         return result;
     }
 
-    void view_ydlidar(const std::vector<cv::Point> &points);
+    void view_ydlidar(const std::vector<cv::Point2d> &points);
 
-    static double calcAngle(const cv::Point &target_point);
+    static double calcAngle(const cv::Point2d &target_point);
 
-    static double calcStraight(const cv::Point &target_point);
+    double calcStraight(const cv::Point2d &target_point);
 
-    void signal_callback(const std_msgs::String::ConstPtr &msgs)
-    {
+    void signal_callback(const std_msgs::String::ConstPtr &msgs) {
         std::cout << msgs->data << '\n';
         status = msgs->data == "start";
         if (!status) {
-            move::Velocity velocity;
+            rione_msgs::Velocity velocity;
             velocity.linear_rate = 0;
             velocity.angular_rate = 0;
             velocity_pub.publish(velocity);
-        }
-        else {
+        } else {
             printf("開始\n");
             data_list.clear();
         }
@@ -88,40 +88,29 @@ public:
 
     void odom_callback(const boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void>>> &odom);
 
-    void updatePlayerPoint(const sensor_msgs::LaserScan_<std::allocator<void>>::ConstPtr &msgs);
+    cv::Point2d transform_absolute_to_relative(cv::Point2d &relative_point) {
+        double relative_theta = this->sensor_rad;
+        double relative_x = relative_point.x;
+        double relative_y = relative_point.y;
 
-    double toQuaternion_degree(double w, double z)
-    {
-        return std::abs((z > 0 ? 1 : 360) - this->toAngle(acos(w) * 2));
+        double x = (relative_x * cos(relative_theta) - relative_y * sin(relative_theta)) + this->sensor_x;
+        double y = (relative_x * sin(relative_theta) + relative_y * cos(relative_theta)) + this->sensor_y;
+        return cv::Point2d(x, y);
     }
 
-    static double toQuaternion_rad(double w, double z)
-    {
-        return acos(w) * (z > 0 ? 1 : -1) * 2;
+    static double toQuaternion_degree(double w, double z) {
+        return std::abs((z > 0 ? 1 : 360) - Follow::toAngle(acos(w) * 2));
     }
 
-    static double toAngle(double rad)
-    { return rad * 180 / M_PI; }
-
-    static double toRadian(double angle)
-    { return (angle * M_PI) / 180; }
-
-    static double sign(double A)
-    { return A == 0 ? 0 : A / std::abs(A); }
-
-    void publishTwist(double liner_x, double angular_z)
-    {
-        geometry_msgs::Twist twist = geometry_msgs::Twist();
-        if (std::abs(liner_x) > MAX_LINEAR) liner_x = MAX_LINEAR * (std::signbit(liner_x) ? -1 : 1);
-        twist.linear.x = liner_x;
-        twist.linear.y = 0.0;
-        twist.linear.z = 0.0;
-        twist.angular.x = 0.0;
-        twist.angular.y = 0.0;
-        if (std::abs(angular_z) > MAX_ANGULAR) angular_z = MAX_ANGULAR * (std::signbit(angular_z) ? -1 : 1);
-        twist.angular.z = angular_z;
-        this->twist_pub.publish(twist);
+    static double toQuaternion_rad(double w, double z) {
+        return acos(w) * 2 * (signbit(z) ? -1 : 1);
     }
+
+    static double toAngle(double rad) { return rad * 180 / M_PI; }
+
+    static double toRadian(double angle) { return (angle * M_PI) / 180; }
+
+    void updatePlayerPoint(double angle_increment, std::vector<cv::Point2d> ydlidar_points);
 };
 
 #endif //SRC_FOLLOW_H_H
