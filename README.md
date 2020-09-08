@@ -14,7 +14,7 @@ https://github.com/rionehome/emergency_stop
 
 ## Usage
 ```
-roslaunch follow_me follow.launch
+roslaunch follow_me follow.launch  
 ```
 
 ## Node
@@ -29,4 +29,4 @@ roslaunch follow_me follow.launch
 
 ### Publish Topic
 
-* **`/move/velocity`** 制御パラメータ送信 ( std_msgs/Float64MultiArray )
+* **`/move/velocity`** 制御パラメータ送信 ( move/velocity )
