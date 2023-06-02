@@ -5,8 +5,8 @@ Follow::Follow(ros::NodeHandle *n) {
     this->ydlidar_sub = n->subscribe("/scan", 1, &Follow::ydlidar_callback, this);
     this->odom_sub = n->subscribe("/odom", 1000, &Follow::odom_callback, this);
     this->signal_sub = n->subscribe("/follow_me/control", 1000, &Follow::signal_callback, this);
-    this->velocity_pub = n->advertise<rione_msgs::Velocity>("/move/velocity", 1000);
-    this->twist_pub = n->advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
+    // this->velocity_pub = n->advertise<rione_msgs::Velocity>("/move/velocity", 1000);
+    this->twist_pub = n->advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 10);
     n->getParam("/follow_me/status", status);
 }
 
@@ -77,10 +77,15 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
     if (status) {
         player_index = max_index;
         player_point = cv::Point2d(ydlidar_points[player_index]);
-        rione_msgs::Velocity velocity;
-        velocity.linear_rate = calcStraight(player_point);
-        velocity.angular_rate = calcAngle(player_point);
-        velocity_pub.publish(velocity);
+        // rione_msgs::Velocity velocity;
+        // velocity.linear_rate = calcStraight(player_point);
+        // velocity.angular_rate = calcAngle(player_point);
+        // velocity_pub.publish(velocity);
+        geometry_msgs::Twist twist;
+        twist.linear.x = calcStraight(player_point);
+        calcStraight(player_point);
+        twist.angular.z = calcAngle(player_point) * 5;
+        this->twist_pub.publish(twist);
     }
     printf("real position");
     cv::Point2d new_position = this->transform_absolute_to_relative(player_point);
@@ -124,18 +129,29 @@ double Follow::calcStraight(const cv::Point2d &target_point) {
      * ただし、move_follow_flagによってしきい値を変更する
      */
     double result;
-    if (std::abs((this->last_degree - this->sensor_degree)) > 40) return 0;
+    // if (std::abs((this->last_degree - this->sensor_degree)) > 40) return 0;
     if (target_point.y > 0) return 0;
-    if (abs(target_point.y) > 100) {
-        result = -target_point.y * 0.05;
-    } else if (abs(target_point.y) < 80) {
-        //result = (100 - abs(target_point.y)) * -0.004;
-        result = 0;
+
+    std::cout << "target_point.y: " << target_point.y << std::endl;
+    
+    // if (abs(target_point.y) > 80) {
+    //     result = -target_point.y * 0.05;
+    // } else if (abs(target_point.y) < 80) {
+    //     //result = (100 - abs(target_point.y)) * -0.004;
+    //     result = 0;
+    // } else {
+    //     result = 0;
+    // }
+
+    if (abs(target_point.y) > 70) {
+        result = abs(target_point.y) * 0.001875;
     } else {
         result = 0;
     }
-    result = result / 0.7;
-    if (std::abs(result) > 1.0) result = 1.0;
+
+    // result = result * 0.1;
+    // if (std::abs(result) > 1.0) result = 1.0;
+    std::cout << "twist.linear.x: " << result << std::endl;  
     return result;
 }
 

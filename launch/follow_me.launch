@@ -1,15 +1,15 @@
 <launch>
-    <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
+    <!-- <include file="$(find turtlebot_bringup)/launch/minimal.launch"/> -->
 
-    <node pkg="emergency_stop" name="emergency_stop" output="screen" respawn="false" type="main.py"/>
+    <!-- <node pkg="emergency_stop" name="emergency_stop" output="screen" respawn="false" type="main.py"/> -->
 
-	<node pkg="follow_me" name="follow_me" respawn="true" output="screen" type="follow_me">
+	<node pkg="follow_me" name="follow_me" output="screen" type="follow_me">
 	    <param name="status" value="true"/>
 	</node>
 
-	<node pkg="move" name="velocity" output="screen" respawn="false" type="velocity"/>
+	<!-- <node pkg="move" name="velocity" output="screen" respawn="false" type="velocity"/> -->
 
-	<node name="ydlidar_node"  pkg="ydlidar"  type="ydlidar_node" output="screen" respawn="false" >
+	<!-- <node name="ydlidar_node"  pkg="ydlidar"  type="ydlidar_node" output="screen" respawn="false" >
 		<param name="port"         type="string" value="/dev/ydlidar"/>
 		<param name="baudrate"     type="int"    value="128000"/>
 		<param name="frame_id"     type="string" value="laser_frame"/>
@@ -24,8 +24,13 @@
 		<param name="ignore_array" type="string" value="" />
 		<param name="samp_rate"    type="int"    value="9"/>
 		<param name="frequency"    type="double" value="7"/>
-	</node>
+	</node> -->
 
-	<node pkg="tf" type="static_transform_publisher" name="base_link_to_laser4"
-	args="0.2245 0.0 0.2 0.0 0.0  0.0 /base_footprint /laser_frame 40" />
+	<node pkg="laser_filters" type="scan_to_scan_filter_chain" name="lafafa">
+        <rosparam command="load" file="$(find follow_me)/config/laser_filters.yaml" />
+    </node>
+
+	<!-- kore nani? -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser4"
+	args="0.2245 0.0 0.2 0.0 0.0  0.0 /base_footprint /laser_frame 40" /> -->
 </launch>

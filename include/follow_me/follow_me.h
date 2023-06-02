@@ -12,9 +12,10 @@
 #include <cmath>
 #include <iostream>
 #include <cmath>
-#include <rione_msgs/Velocity.h>
+// #include <rione_msgs/Velocity.h>
 #include <nav_msgs/Odometry.h>
 #include <cfloat>
+#include <geometry_msgs/Twist.h>
 
 #ifndef SRC_FOLLOW_H_H
 #define SRC_FOLLOW_H_H
@@ -72,12 +73,23 @@ public:
 
     void signal_callback(const std_msgs::String::ConstPtr &msgs) {
         std::cout << msgs->data << '\n';
-        status = msgs->data == "start";
+        // status = msgs->data == "start";
+
+        if (msgs->data == "start" && this->status == false)
+            this->status = true;
+        
+        if (msgs->data == "stop" && this->status == true)
+            this->status = false;
+
         if (!status) {
-            rione_msgs::Velocity velocity;
-            velocity.linear_rate = 0;
-            velocity.angular_rate = 0;
-            velocity_pub.publish(velocity);
+            // rione_msgs::Velocity velocity;
+            // velocity.linear_rate = 0;
+            // velocity.angular_rate = 0;
+            // velocity_pub.publish(velocity);
+            geometry_msgs::Twist twist;
+            twist.linear.x = 0;
+            twist.linear.y = 0;
+            twist_pub.publish(twist);
         } else {
             printf("開始\n");
             data_list.clear();
