@@ -41,7 +41,7 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
         for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
             //正規分布に従って初期化
             SampleData d = {i, ydlidar_points[i], calc_normal_distribution(i, 360, (int) ydlidar_points.size()) *
-                                                  cost(cv::Point2d(0, 0), ydlidar_points[i])
+                                                cost(cv::Point2d(0, 0), ydlidar_points[i])
             };
             data_list.push_back(d);
         }
@@ -51,8 +51,8 @@ void Follow::ydlidar_callback(const sensor_msgs::LaserScan::ConstPtr &msgs) {
         for (int i = 0; i < (int) ydlidar_points.size(); ++i) {
             data_list[i].point = ydlidar_points[i];
             data_list[i].existence_rate = cost(this->player_point, ydlidar_points[i]) +
-                                          data_list[i].existence_rate *
-                                          calc_normal_distribution(i, this->player_index, (int) ydlidar_points.size());
+                                        data_list[i].existence_rate *
+                                        calc_normal_distribution(i, this->player_index, (int) ydlidar_points.size());
         }
     }
     //正規化
@@ -124,18 +124,21 @@ double Follow::calcStraight(const cv::Point2d &target_point) {
      * ただし、move_follow_flagによってしきい値を変更する
      */
     double result;
-    if (std::abs((this->last_degree - this->sensor_degree)) > 40) return 0;
+    // if (std::abs((this->last_degree - this->sensor_degree)) > 40) return 0;
     if (target_point.y > 0) return 0;
-    if (abs(target_point.y) > 100) {
-        result = -target_point.y * 0.05;
-    } else if (abs(target_point.y) < 80) {
-        //result = (100 - abs(target_point.y)) * -0.004;
-        result = 0;
+
+    std::cout << "target_point.y: " << target_point.y << std::endl;
+    
+    // 30秒間移動がなかったら対象に60cmまで近づくようにする
+    if (abs(target_point.y) >= 110 && time_since_last_movement > 30) {
+        result = abs(target_point.y) * 0.001875;
+    }else if (abs(target_point.y) >120) {
+        result = abs(target_point.y) * 0.001875;  
     } else {
         result = 0;
     }
-    result = result / 0.7;
-    if (std::abs(result) > 1.0) result = 1.0;
+
+    std::cout << "twist.linear.x: " << result << std::endl;  
     return result;
 }
 
