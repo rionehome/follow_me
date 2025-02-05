@@ -1,32 +1,11 @@
-# follow_me
-## Overview
-自己位置推定のアルゴリズムを利用した、精度の高いfollow meのプログラムです。
+# follow_me (Python3)
+This is a Python3 implementation of ROS2 follow_me package (https://github.com/rionehome/follow_me/tree/ros2/master) which was originally written in C++.<br>
+The content basically remains the same, but some modification and optimization has been done to make the code more readable and organized.<br>
 
-## setup
-```
-https://github.com/rionehome/follow_me
-https://github.com/rionehome/move
-https://github.com/EAIBOT/ydlidar
-https://github.com/rionehome/rione_msgs
-https://github.com/rionehome/emergency_stop
-```
-これらのパッケージをcloneした上でインストール・ビルドを行ってください。
+## Publisher
+- /cmd_vel          (geometry_msgs.msg/Twist)
 
-## Usage
-```
-roslaunch follow_me follow.launch  
-```
-
-## Node
-**`name` Follow**
-
-### Subscribe Topic
-
-* **`/scan`** ydlidarの情報受け取り（ sensor_msgs/LaserScan ）
-
-* **`/follow_me/control`** follow me 開始・終了のシグナル受け取り ( std_msgs/String )
-
-
-### Publish Topic
-
-* **`/move/velocity`** 制御パラメータ送信 ( move/velocity )
+## Subscriber
+- /scan             (sensor_msgs.msg/LaserScan)
+- /odometry         (nav_msgs.msg/Odometry)
+- /sig_follow_me    (std_msgs.msg/String["start", "stop"])
