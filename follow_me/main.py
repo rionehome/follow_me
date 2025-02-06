@@ -27,18 +27,15 @@ class FollowMe(Node):
         
         self.xkf: ExtendedKalmanFilter = None
 
-        self.i:            int = 0
         self.status:      bool = False
         self.view_laser:  bool = False
 
         self.ydlidar_points: list[Point] = []
-        self.ydlidar_ranges: list[float] = []
 
         self.rad:               float = 0
         self.angle_increment:   float = 0
         self.sensor_degree:     float = 0
-        self.last_degree:       float = 0
-        self.min:                 int = 20
+        self.min:               float = 0.2  # [m]
 
         self.distance:      float = 0
         self.min_index:       int = 0
@@ -51,56 +48,51 @@ class FollowMe(Node):
     def ydlidar_callback(self, msg) -> None:
         self.rad = msg.angle_min
         self.angle_increment = msg.angle_increment
+        range_min: float = self.min if (self.min > msg.range_min) else msg.range_min
 
         self.ydlidar_points = []
-        self.ydlidar_ranges = []
-
+            
+        # convert polar coordinate -> cartesian coordiante
         for range: float in msg.ranges: # range measured in [m]
-            # convert polar coordinate -> cartesian coordiante
-            x: int = int( range * np.sin(self.rad) * 100) # [m] -> [cm]
-            y: int = int(-range * np.cos(self.rad) * 100) # [m] -> [cm]
-            if (-1 * self.min < x && x < self.min) && (-1 * self.min < y && y < self.min): # change here to prevent detection of robot's parts
-                x = sys.maxsize 
-            position: Point = Point(x, y)
-            self.ydlidar_points.append(position)
-            self.ydlidar_ranges.append(range)
+            if (range_min <= range && range <= msg.range_max):
+                x: int = int( range * np.sin(self.rad) * 100) # [m] -> [cm]
+                y: int = int(-range * np.cos(self.rad) * 100) # [m] -> [cm]
+                position: Point = Point(x, y)
+                self.ydlidar_points.append(position)
             self.rad += self.angle_increment
 
+        # find closest object
+        self.min_distance = sys.float_info.max 
+        for i in range(len(self.ydlidar_points)):
+            self.distance = np.sqrt(np.pow(self.ydlidar_points[i].x - self.player_point.x, 2) + np.pow(self.ydlidar_points[i].y - self.player_point.y, 2));
+            if (self.distance < self.min_distance):
+                self.min_distance = distance
+                self.min_index = i
+        
+        # init xkf or update estimated target position
         if (self.player_point.x == 0 && self.player_point.y == 0):
-            for i in range(len(self.ydlidar_points)):
-                self.distance = np.sqrt(np.pow(self.ydlidar_points[i].x - self.player_point.x, 2) + np.pow(self.ydlidar_points[i].y - self.player_point.y, 2));
-                if (self.distance < self.min_distance):
-                    self.min_distance = distance
-                    self.min_index = i
             self.player_point = self.ydlidar_points[self.min_index]
             self.xkf = ExtendedKalmanFilter(self.player_point.x, self.player_point.y, 0.02)
         else:
-            self.min_distance = sys.float_info.max 
-            for i in range(len(self.ydlidar_points)):
-                self.distance = np.sqrt(np.pow(self.ydlidar_points[i].x - self.player_point.x, 2) + np.pow(self.ydlidar_points[i].y - self.player_point.y), 2)
-                if (self.distance < self.min_distance):
-                    self.min_distance = distance
-                    self.min_index = i
             dx: float = self.ydlidar_points[i].x - self.player_point.x
             dy: float = self.ydlidar_points[i].y - self.player_point.y
-            point: tuple[float, float] = self.xkf.kalman_filter(self.ydlidar_points[self.min_index].x, self.ydlidar_points[self.min_index].y, dx, dy)
-
-            self.player_point = Point(point[0], point[1])
-
+            self.player_point = self.xkf.kalman_filter(self.ydlidar_points[self.min_index].x, self.ydlidar_points[self.min_index].y, dx, dy)
+        
+        # if enabled, visualize lidar data
         if (view_laser): self.view_ydlidar() 
 
+        # if enabled, publish twist according to estimated target's position
         if (status):
             twist: Twist = Twist()
             twist.linear.x = self.calcStraight() / 2
 
             if (self.player_point.y > 0):
                 if (self.player_point.x > 0):
-                    twist.angular.z = self.player_point.distance() * 0.01
+                    twist.angular.z = self.player_point.distance() * 0.01  # [cm] -> [m]
                 else:
-                    twist.angular.z = self.player_point.distance() * -0.01
+                    twist.angular.z = self.player_point.distance() * -0.01 # [cm] -> [m]
             else:
                 twist.angular.z = self.calcAngle(self.player_point)
-
 
             self.pub_vel.publish(twist)
         return
@@ -132,12 +124,11 @@ class FollowMe(Node):
 
 
     def calcAngle(self, target_point: Point) -> float:
-        return target_point.x * 0.01
+        return target_point.x * 0.01  # [cm] -> [m]
 
 
     def calcStraight(self, target_point: Point) -> float:
-        # [cm] -> [m]
-        return -(target_point.y + 50) * 0.01 if target_point.y + 50 < 0 else 0
+        return -(target_point.y + 50) * 0.01 if target_point.y + 50 < 0 else 0  # [cm] -> [m]
 
 
     def view_ydlidar(self) -> None:
