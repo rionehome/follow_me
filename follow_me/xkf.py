@@ -1,4 +1,5 @@
 import numpy as np
+from util import Point
 
 
 class ExtendedKalmanFilter:
@@ -51,7 +52,7 @@ class ExtendedKalmanFilter:
         return (np.identity(2, dtype=np.float64) - kalman_gain * self.C) * _P
 
 
-    def kalman_filter(self, _px: float, _py: float, _dx: float, _dy: float) -> tuple[float, float]:
+    def kalman_filter(self, _px: float, _py: float, _dx: float, _dy: float) -> Point:
         value_of_prior_state_estimate = self.prior_state_estimate()
         self.jacobian_matrix(_dx, _dy)
         value_of_prior_error_covariance_matrix = self.prior_error_covariance_matrix()
@@ -65,7 +66,7 @@ class ExtendedKalmanFilter:
         self.x = value_state_estimate
         self.P = value_posteriori_error_covariance_matrix
 
-        return (value_state_estimate[0][0], value_state_estimate[1][0])
+        return Point(value_state_estimate[0][0], value_state_estimate[1][0])
 
 
 
