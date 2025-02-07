@@ -9,4 +9,19 @@ class Point:
 
 
     def distance(self) -> float:
-        return np.sqrt(np.pow(self.x, 2) + np.pow(self.y, 2))
+        """Returns distance from the origin."""
+        return np.hypot(self.x, self.y)
+
+
+    @staticmethod
+    def hypot(point1: Point, point2: Point) -> float:
+        """Returns the distance between two Points."""
+        return np.hypot(point2.x - point1.x, point2.y - point2.y)
+
+
+class PointData:
+
+    def __init__(self, index: int, point: Point, existence_rate: float):
+        self.index:            int = index
+        self.point:          Point = point
+        self.existence_rate: float = existence_rate
