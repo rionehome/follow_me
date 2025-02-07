@@ -8,8 +8,7 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
-from util import Point
-from xkf import ExtendedKalmanFilter
+from util import Point, PointData
 
 # Turtlebot3 Waffle Specs
 MAX_LINEAR  = 0.26 # m/s
@@ -23,7 +22,7 @@ class FollowMe(Node):
         self.pub_vel = self.create_publisher(Twist, "/cmd_vel", 10) 
         self.sub_ydl = self.create_subscription(LaserScan, "/scan", self.ydlidar_callback, 10)
         self.sub_odm = self.create_subscription(Odometry, "/odometry", self.odometry_callback, 10)
-        self.sub_sig = self.create_subscription(String, "/sig_follow_me", self.signal_callback, 10)
+        self.sub_cmd = self.create_subscription(String, "/follow_me/cmd", self.signal_callback, 10)
 
         ## User configurable ##
         self.view_laser:  bool = False  # whether to show graphical lidar data
@@ -38,17 +37,12 @@ class FollowMe(Node):
         self.sensor_degree:     float = 0.0
         self.last_degree:       float = 0.0
 
-        self.min_index:       int = 0
-        self.distance:      float = 0.0
-        self.min_distance:  float = sys.float_info.max
-
-        self.player_point:              Point = Point(0, 0)
-        self.last_absolute_position:    Point = Point(0, 0)
+        self.player_index:             int = -1
+        self.player_point:           Point = Point(0, 0)
+        self.last_absolute_position: Point = Point(0, 0)
         
-        self.stack_absolute_positions:  list[Point] = []
-        self.ydlidar_points:            list[Point] = []
-
-        self.xkf: ExtendedKalmanFilter = None
+        self.ydlidar_ranges: list[float] = []
+        self.data_list:  list[PointData] = []
 
         self.get_logger().info(f"[+][follow_me] Successfully initialized.")
 
@@ -57,52 +51,80 @@ class FollowMe(Node):
         rad: float = msg.angle_min
         range_min: float = self.min_range if (self.min_range > msg.range_min) else msg.range_min
 
-        self.ydlidar_points = []
+        ydlidar_points:      list[Point] = []
+        self.ydlidar_ranges: list[float] = []
             
         # convert polar coordinate -> cartesian coordiante
-        for range: float in msg.ranges: # range measured in [m]
-            if (range_min <= range && range <= msg.range_max):
-                position: Point = Point(range * np.sin(rad) * 100, -range * np.cos(rad) * 100)  # [m] -> [cm]
-                self.ydlidar_points.append(position)
+        for measured_range in msg.ranges: # range measured in [m]
+            position: Point = Point(0, 0)
+            if (range_min <= measured_range and measured_range <= msg.range_max):
+                position.x, position.y = (measured_range * np.sin(rad) * 100), (-measured_range * np.cos(rad) * 100)  # [m] -> [cm]
+            ydlidar_points.append(position)
+            self.ydlidar_ranges.append(measured_range)
             rad += msg.angle_increment
 
-        # find closest object
-        self.min_distance = sys.float_info.max 
-        for i in range(len(self.ydlidar_points)):
-            self.distance = np.sqrt(np.pow(self.ydlidar_points[i].x - self.player_point.x, 2) + np.pow(self.ydlidar_points[i].y - self.player_point.y, 2));
-            if (self.distance < self.min_distance):
-                self.min_distance = distance
-                self.min_index = i
-        
-        # init xkf or update estimated target position
-        if (self.player_point.x == 0 && self.player_point.y == 0):
-            self.player_point = self.ydlidar_points[self.min_index]
-            self.xkf = ExtendedKalmanFilter(self.player_point.x, self.player_point.y, 0.02)
+        # update PointData list
+        if (len(self.data_list) == 0):  # init Gaussian distrib
+            for i in range(len(ydlidar_points)):
+                data: PointData = PointData(
+                    index = i,
+                    point = ydlidar_points[i],
+                    existence_rate = self.calc_normal_distribution(i, 360, len(ydlidar_points)) * ydlidar_points[i].distance()
+                )
+                self.data_list.append(data)
         else:
-            dx: float = self.ydlidar_points[i].x - self.player_point.x
-            dy: float = self.ydlidar_points[i].y - self.player_point.y
-            self.player_point = self.xkf.kalman_filter(self.ydlidar_points[self.min_index].x, self.ydlidar_points[self.min_index].y, dx, dy)
+            self.updatePlayerPoint(msg.angle_increment, ydlidar_points)
+            for i in range(len(ydlidar_points)):
+                self.data_list[i].point = ydlidar_points[i]
+                self.data_list[i].existence_rate = self.cost(self.player_point, ydlidar_points[i]) + \
+                                                   self.data_list[i].existence_rate * \
+                                                   self.calc_normal_distribution(i, self.player_index, len(ydlidar_points))
+
+        # normalization
+        total:      float = 0.0
+        max_val:    float = 0.0
+        max_index:    int = 0
+        for i in range(len(ydlidar_points)):
+            if (self.data_list[i].existence_rate == 0): self.data_list[i].existence_rate = 0.001
+            total += self.data_list[i].existence_rate
+            if (max_val < self.data_list[i].existence_rate):
+                max_val     = self.data_list[i].existence_rate
+                max_index   = i
+        for i in range(len(ydlidar_points)):
+            self.data_list[i].existence_rate /= total
 
         # if enabled, publish twist according to estimated target's position
         if (status):
+            self.player_index = max_index
+            self.player_point = ydlidar_points[self.player_index]
+            
             twist: Twist = Twist()
             twist.linear.x  = self.calcStraight()
             twist.angular.z = self.calcAngle() 
             self.pub_vel.publish(twist)
 
+        new_position: Point = self.transform_absolute_to_relative(self.player_point)
+        tmp: Point = Point(new_position.x - self.last_absolute_position.x,
+                           new_position.y - self.last_absolute_position.y)
+        self.get_logger().info(f"[+][follow_me] Distance: {tmp.distance()}")
+        self.last_absolute_position = new_position
+
         # if enabled, visualize lidar data
-        if (view_laser): self.view_ydlidar() 
+        if (view_laser): self.view_ydlidar(ydlidar_points) 
         return
 
 
-    def odometry_callback(self, msg) -> None:
-        self.sensor_degree = self.quaternionToDegree(msg.pose.pose.orientation.w, msg.pose.pose.orientation.z)
+    def odometry_callback(self, odom) -> None:
+        self.sensor_x = odom.pose.pose.position.x
+        self.sensor_y = odom.pose.pose.position.y
+        self.sensor_degree = self.quaternionToDegree(odom.pose.pose.orientation.w, odom.pose.pose.orientation.z)
+        self.sensor_rad    = self.quaternionToRadian(odom.pose.pose.orientation.w, odom.pose.pose.orientation.z)
         return
 
 
     def signal_callback(self, msg) -> None:
-        if (msg.data == "start" && self.status == False): self.status = True
-        elif (msg.data == "stop" && self.status == True): self.status = False
+        if (msg.data == "start" and self.status == False): self.status = True
+        elif (msg.data == "stop" and self.status == True): self.status = False
         else: self.get_logger().info(f"[-][follow_me] Bad signal received: {msg.data}")
 
         if (self.status): self.get_logger().info(f"[+][follow_me] Activated!")
@@ -115,12 +137,43 @@ class FollowMe(Node):
         return
 
 
-    def quaternionToDegree(self, w: float, z: float) -> float:
-        return np.abs((1 if z > 0 else 360) - self.toAngle(np.arccos(w) * 2))  
+    def calc_normal_distribution(self, target_index: int, center_index: int, index_size: int) -> float:
+        index_distance: float = np.abs(target_index - center_index)
+        if (index_distance > index_size / 2.0): index_distance -= index_size
+        index_distance /= 95.0
+        normal_distribution: float = 1 / np.sqrt(2.0 * np.pi()) * np.exp((-index_distance * index_distance) / 2.0)
+        return normal_distribution
+
+
+    def transform_absolute_to_relative(self, relative_point: Point) -> Point:
+        relative_theta: float = self.sensor_rad
+        relative_x:     float = relative_point.x
+        relative_y:     float = relative_point.y
+
+        x: float = (relative_x * np.cos(relative_theta) - relative_y * np.sin(relative_theta)) + self.sensor_x
+        y: float = (relative_x * np.sin(relative_theta) + relative_y * np.cos(relative_theta)) + self.sensor_y
+        return Point(x, y)
 
 
     @staticmethod
-    def toAngle(rad: float) -> float:
+    def cost(point1: Point, point2: Point) -> float:
+        result: float = 0.01 if (point2.x == 0 and point2.y == 0) else Point.hypot(point1, point2)
+        if (result >= sys.float_info.max): result = 0.1
+        return result
+
+
+    @staticmethod
+    def quaternionToRadian(w: float, z: float) -> float:
+        return 2 * np.arccos(w) * (-1 if (z < 0) else 1)
+
+
+    @staticmethod
+    def quaternionToDegree(w: float, z: float) -> float:
+        return np.abs((1 if (z > 0) else 360) - self.toDegree(2 * np.arccos(w)))
+    
+
+    @staticmethod
+    def toDegree(rad: float) -> float:
         return rad * 180 / np.pi()
 
 
@@ -129,23 +182,36 @@ class FollowMe(Node):
         return (angle * np.pi()) / 180
 
 
-    def calcAngle(self) -> float:
-        result = self.player_point.x * 0.021
+    @staticmethod
+    def calcAngle(target_point: Point) -> float:
+        result: float = target_point.x * 0.021
         if (np.abs(result) > MAX_ANGULAR): result = MAX_ANGULAR
         return result
 
 
-    def calcStraight(self) -> float:
-        result = 0;
-        if (self.player_point.y < 0 && np.abs(self.player_point.y) > 70):
-            result = np.abs(self.player_point.y) * 0.001875
+    @staticmethod
+    def calcStraight(target_point: Point) -> float:
+        result: float = 0
+        if (target_point.y < 0 and np.abs(target_point.y) > 70):
+            result = np.abs(target_point.y) * 0.001875
+        if (np.abs(result) > MAX_LINEAR): result = MAX_LINEAR
         return result
 
 
-    def view_ydlidar(self) -> None:
+    def updatePlayerPoint(self, angle_increment: float, ydlidar_points: list[Point]) -> None:
+        relative_theta: float = self.toRadian(self.last_degree - self.sensor_degree)
+        if (np.abs(relative_theta) > np.pi()): 
+            relative_theta = (2 * np.pi() - relative_theta)
+
+        self.player_index += int(relative_theta / angle_increment)
+        self.last_degree = self.sensor_degree
+        return
+
+
+    def view_ydlidar(self, points: list[Point]) -> None:
         """optional"""
         img: np.ndarray = np.zero((1000, 1000, 3), dtype=np.uint8) 
-        for point: Point in self.ydlidar_points:
+        for point in points:
             x = point.x + 500
             y = point.y + 250
             cv2.circle(img, center=(x, y), radius=1, color=(0, 255, 0), thickness=1)
