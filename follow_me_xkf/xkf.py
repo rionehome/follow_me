@@ -4,9 +4,7 @@ from util import Point
 
 class ExtendedKalmanFilter:
 
-    def __init__(self, init_x: float, init_y: float, dt: float):
-        self.dt: float = dt
-
+    def __init__(self, init_x: float, init_y: float):
         self.x: np.ndarray = np.array([[init_x], [init_y]])
         self.u: np.ndarray = np.zeros((2, 1), dtype=np.float64)
         
@@ -16,10 +14,6 @@ class ExtendedKalmanFilter:
         self.P: np.ndarray = np.identity(2, dtype=np.float64) * 0.1
         self.Q: np.ndarray = np.identity(2, dtype=np.float64)
         self.R: np.ndarray = np.identity(2, dtype=np.float64)
-
-    
-    def __del__(self):
-        pass
 
 
     def prior_state_estimate(self) -> np.ndarray:
