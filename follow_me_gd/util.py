@@ -14,7 +14,7 @@ class Point:
 
 
     @staticmethod
-    def hypot(point1: Point, point2: Point) -> float:
+    def hypot(point1: 'Point', point2: 'Point') -> float:
         """Returns distance between two Points."""
         return np.hypot(point2.x - point1.x, point2.y - point1.y)
 
