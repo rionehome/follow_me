@@ -9,4 +9,4 @@ class Point:
 
 
     def distance(self) -> float:
-        return np.sqrt(np.pow(self.x, 2) + np.pow(self.y, 2))
+        return np.sqrt(np.power(self.x, 2) + np.power(self.y, 2))
