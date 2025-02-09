@@ -1,5 +1,5 @@
 import numpy as np
-from util import Point
+from follow_me_xkf.util import Point
 
 
 class ExtendedKalmanFilter:
@@ -50,7 +50,7 @@ class ExtendedKalmanFilter:
         value_of_prior_state_estimate = self.prior_state_estimate()
         self.jacobian_matrix(_dx, _dy)
         value_of_prior_error_covariance_matrix = self.prior_error_covariance_matrix()
-        kalman_gain_matrix = kalman_gain(value_of_prior_error_covariance_matrix)
+        kalman_gain_matrix = self.kalman_gain(value_of_prior_error_covariance_matrix)
 
         observation_matrix: np.ndarray = np.array([[_px], [_py]])
         
