@@ -18,17 +18,17 @@ class ExtendedKalmanFilter:
 
     def prior_state_estimate(self) -> np.ndarray:
         """Mat[2,1]"""
-        return self.A * self.x + self.B * self.u
+        return self.A @ self.x + self.B @ self.u
 
     
     def prior_error_covariance_matrix(self) -> np.ndarray:
         """Mat[2,2]"""
-        return self.A * self.P * self.A.T + self.Q
+        return self.A @ self.P @ self.A.T + self.Q
 
 
     def kalman_gain(self, _P: np.ndarray) -> np.ndarray:
         """Mat[2,2] -> Mat[2,2]"""
-        return _P * self.C.T * np.linalg.inv(self.C * _P * self.C.T + self.R)
+        return _P @ self.C.T @ np.linalg.inv(self.C @ _P @ self.C.T + self.R)
 
 
     def jacobian_matrix(self, dx: float, dy: float) -> None:
@@ -38,12 +38,12 @@ class ExtendedKalmanFilter:
 
     def state_estimate(self, x: np.ndarray, y: np.ndarray, kalman_gain: np.ndarray) -> np.ndarray:
         """Mat[2,1], Mat[2,1], Mat[2,2] -> Mat[2,1]"""
-        return x + kalman_gain * (y - self.C * x)
+        return x + kalman_gain @ (y - self.C @ x)
 
 
     def posteriori_error_covariance_matrix(self, kalman_gain: np.ndarray, _P: np.ndarray) -> np.ndarray:
         """Mat[2,2], Mat[2,2] -> Mat[2,2]"""
-        return (np.identity(2, dtype=np.float64) - kalman_gain * self.C) * _P
+        return (np.identity(2, dtype=np.float64) - kalman_gain @ self.C) @ _P
 
 
     def kalman_filter(self, _px: float, _py: float, _dx: float, _dy: float) -> Point:
