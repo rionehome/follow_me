@@ -201,14 +201,14 @@ class FollowMe(Node):
     @staticmethod
     def calcAngle(target_point: Point) -> float:
         result: float = target_point.x * 0.021
-        if (np.abs(result) > MAX_ANGULAR): result = MAX_ANGULAR
+        if (np.abs(result) > MAX_ANGULAR): result = np.sign(result) * MAX_ANGULAR
         return result
 
 
     @staticmethod
     def calcStraight(target_point: Point) -> float:
         result: float = 0.0
-        if (target_point.y < 0 and np.abs(target_point.y) > 70):
+        if (target_point.y < -70):
             result = np.abs(target_point.y) * 0.001875
         if (np.abs(result) > MAX_LINEAR): result = MAX_LINEAR
         return result
