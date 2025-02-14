@@ -103,13 +103,13 @@ class FollowMe(Node):
 
     def calcAngle(self) -> float:
         result = self.player_point.x * 0.021
-        if (np.abs(result) > MAX_ANGULAR): result = MAX_ANGULAR
+        if (np.abs(result) > MAX_ANGULAR): result = np.sign(result) * MAX_ANGULAR
         return result
 
 
     def calcStraight(self) -> float:
         result = 0.0
-        if (self.player_point.y < 0 and np.abs(self.player_point.y) > 70):
+        if (self.player_point.y < -70):
             result = np.abs(self.player_point.y) * 0.001875
         if (np.abs(result) > MAX_LINEAR): result = MAX_LINEAR
         return result
