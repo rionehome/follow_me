@@ -51,7 +51,7 @@ class FollowMe(Node):
         self.ydlidar_ranges: list[float] = []
         self.data_list:  list[PointData] = []
 
-        self.get_logger().info(f"[+][follow_me] Successfully initialized.")
+        self.get_logger().info("Successfully initialized.")
 
 
     def ydlidar_callback(self, msg) -> None:
@@ -76,7 +76,8 @@ class FollowMe(Node):
                 data: PointData = PointData(
                     index = i,
                     point = ydlidar_points[i],
-                    existence_rate = self.calc_normal_distribution(i, 360, int(len(ydlidar_points)) * ydlidar_points[i].distance())
+                    existence_rate = self.calc_normal_distribution(i, 360, len(ydlidar_points)) * \
+                                     self.cost(Point(0, 0), ydlidar_points[i])
                 )
                 self.data_list.append(data)
         else:
@@ -88,7 +89,7 @@ class FollowMe(Node):
                                                        self.data_list[i].existence_rate * \
                                                        self.calc_normal_distribution(i, self.player_index, len(ydlidar_points))
                 except IndexError as e:
-                    break
+                    continue
 
         # normalization
         total:      float = 0.0
@@ -102,12 +103,13 @@ class FollowMe(Node):
                     max_val     = self.data_list[i].existence_rate
                     max_index   = i
             except IndexError as e:
-                break
+                continue
+
         for i in range(len(ydlidar_points)):
             try:
                 self.data_list[i].existence_rate /= total
             except IndexError as e:
-                break
+                continue
 
         # if enabled, publish twist according to estimated target's position
         if (self.status):
@@ -120,13 +122,14 @@ class FollowMe(Node):
             self.pub_vel.publish(twist)
 
         new_position: Point = self.transform_absolute_to_relative(self.player_point)
-        tmp: Point = Point(new_position.x - self.last_absolute_position.x,
-                           new_position.y - self.last_absolute_position.y)
-        self.get_logger().info(f"[+][follow_me] Distance: {tmp.distance()}")
+        delta_x: float = (new_position.x - self.last_absolute_position.x) / 100
+        delta_y: float = (new_position.y - self.last_absolute_position.y) / 100 # [cm] -> [m]
+        self.get_logger().info(f"Delta [m] : {np.sqrt(np.pow(delta_x, 2) + np.pow(delta_y, 2))}")
         self.last_absolute_position = new_position
 
         # if enabled, visualize lidar data
         if (self.view_laser): self.view_ydlidar(ydlidar_points) 
+        self.get_logger().info(f"Point [m] : ({self.player_point.x / 100}, {self.player_point.y / 100})")
         return
 
 
@@ -141,15 +144,15 @@ class FollowMe(Node):
     def signal_callback(self, msg) -> None:
         if (msg.data == "start" and self.status == False): self.status = True
         elif (msg.data == "stop" and self.status == True): self.status = False
-        else: self.get_logger().info(f"[-][follow_me] Bad signal received: {msg.data}")
+        else: self.get_logger().info(f"Bad signal received : {msg.data}")
 
-        if (self.status): self.get_logger().info(f"[+][follow_me] Activated!")
+        if (self.status): self.get_logger().info("Activated!")
         else:
             twist: Twist = Twist()
             twist.linear.x  = 0
             twist.angular.z = 0
             self.pub_vel.publish(twist)
-            self.get_logger().info(f"[+][follow_me] Deactivated!")
+            self.get_logger().info("Deactivated!")
         return
 
 
@@ -157,7 +160,7 @@ class FollowMe(Node):
         index_distance: float = np.abs(target_index - center_index)
         if (index_distance > index_size / 2.0): index_distance -= index_size
         index_distance /= 95.0
-        normal_distribution: float = 1.0 / np.sqrt(2.0 * np.pi) * np.exp((-index_distance * index_distance) / 2.0)
+        normal_distribution: float = (1.0 / np.sqrt(2.0 * np.pi)) * np.exp((-index_distance * index_distance) / 2.0)
         return normal_distribution
 
 
@@ -173,7 +176,7 @@ class FollowMe(Node):
 
     @staticmethod
     def cost(point1: Point, point2: Point) -> float:
-        result: float = 0.01 if (point2.x == 0 and point2.y == 0) else Point.hypot(point1, point2)
+        result: float = 0.01 if (point2.x == 0 and point2.y == 0) else 3.0 / Point.hypot(point1, point2) # Error!
         if (result >= sys.float_info.max): result = 0.1
         return result
 
@@ -200,7 +203,7 @@ class FollowMe(Node):
 
     @staticmethod
     def calcAngle(target_point: Point) -> float:
-        result: float = target_point.x * 0.021
+        result: float = target_point.x * 0.0042
         if (np.abs(result) > MAX_ANGULAR): result = np.sign(result) * MAX_ANGULAR
         return result
 
@@ -208,7 +211,7 @@ class FollowMe(Node):
     @staticmethod
     def calcStraight(target_point: Point) -> float:
         result: float = 0.0
-        if (target_point.y < -70):
+        if (np.abs(target_point.y) >= 70):
             result = np.abs(target_point.y) * 0.001875
         if (np.abs(result) > MAX_LINEAR): result = MAX_LINEAR
         return result
@@ -217,7 +220,7 @@ class FollowMe(Node):
     def updatePlayerPoint(self, angle_increment: float, ydlidar_points: list[Point]) -> None:
         relative_theta: float = self.toRadian(self.last_degree - self.sensor_degree)
         if (np.abs(relative_theta) > np.pi): 
-            relative_theta = (2 * np.pi - relative_theta)
+            relative_theta = (2 * np.pi) - relative_theta
 
         self.player_index += int(relative_theta / angle_increment)
         self.last_degree = self.sensor_degree
