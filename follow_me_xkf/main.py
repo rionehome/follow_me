@@ -70,8 +70,8 @@ class FollowMe(Node):
             self.player_point = self.ydlidar_points[min_index]
             self.xkf = ExtendedKalmanFilter(self.player_point.x, self.player_point.y)
         else:
-            dx: float = self.ydlidar_points[i].x - self.player_point.x
-            dy: float = self.ydlidar_points[i].y - self.player_point.y
+            dx: float = self.ydlidar_points[min_index].x - self.player_point.x
+            dy: float = self.ydlidar_points[min_index].y - self.player_point.y
             self.player_point = self.xkf.kalman_filter(self.ydlidar_points[min_index].x, self.ydlidar_points[min_index].y, dx, dy)
 
         # if enabled, publish twist according to estimated target's position
@@ -91,13 +91,13 @@ class FollowMe(Node):
         elif (msg.data == "stop" and self.status == True): self.status = False
         else: self.get_logger().info(f"Bad signal received: {msg.data}")
 
-        if (self.status): self.get_logger().info(f"Activated!")
+        if (self.status): self.get_logger().info("Activated!")
         else:
             twist: Twist = Twist()
             twist.linear.x  = 0
             twist.angular.z = 0
             self.pub_vel.publish(twist)
-            self.get_logger().info(f"Deactivated!")
+            self.get_logger().info("Deactivated!")
         return
 
 
