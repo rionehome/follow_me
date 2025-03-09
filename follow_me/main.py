@@ -9,7 +9,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSReliabilityPolicy
 
-from follow_me_gd.util import Point, PointData
+from follow_me.util import Point, PointData
 
 # Turtlebot3 Waffle Specs
 MAX_LINEAR  = 0.26 # m/s
