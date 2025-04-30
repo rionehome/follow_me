@@ -36,7 +36,7 @@ class FollowMe(Node):
         self.min_range:  float = 0.2    # min detection range [m]
         #######################
 
-        self.status:      bool = True
+        self.status:      bool = False
 
         self.sensor_x:          float = 0.0
         self.sensor_y:          float = 0.0
